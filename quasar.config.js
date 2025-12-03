@@ -73,11 +73,11 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       https: false,
-      port: 9000, // oder dein aktueller Quasar-Port
+      port: 8080, // oder dein aktueller Quasar-Port
       open: true,
       proxy: {
         '/api': {
-          target: 'http://swgoh-comlink:3300',
+          target: 'http://swgoh-backend:3000',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, ''),
