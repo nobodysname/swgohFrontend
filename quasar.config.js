@@ -77,7 +77,7 @@ export default defineConfig((/* ctx */) => {
       open: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: 'http://swgoh-comlink:3300',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, ''),

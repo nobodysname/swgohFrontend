@@ -21,7 +21,7 @@ app.use(
 
 function customCacheControl(res, file) {
   if (path.extname(file) === 'html') {
-    res.setHeaders('Chache-Control', 'public, max-age = 0')
+    res.setHeaders('Cache-Control', 'public, max-age = 0')
   }
 }
 
@@ -29,6 +29,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'))
 })
 
-app.listen(port, () => {
-  console.log(`Frontend läuft auf http://localhost:${port}`)
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Frontend läuft auf http://0.0.0.0:${port}`)
 })

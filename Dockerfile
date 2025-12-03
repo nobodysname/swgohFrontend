@@ -2,14 +2,19 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Dependencies installieren
 COPY package*.json ./
 RUN npm install -g @quasar/cli
 RUN npm install
 
+# Quasar Code kopieren
 COPY . .
 
+# SPA bauen
 RUN quasar build
 
-EXPOSE 8080
+# Container-Port
+EXPOSE 80
 
-CMD ["npm", "run", "start"]
+# Frontend-Server starten
+CMD ["node", "server.cjs"]
