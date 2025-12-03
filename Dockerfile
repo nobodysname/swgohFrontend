@@ -10,6 +10,6 @@ COPY . .
 
 RUN quasar build
 
-EXPOSE 9000
+EXPOSE 8080
 
 CMD ["npm", "run", "start"]

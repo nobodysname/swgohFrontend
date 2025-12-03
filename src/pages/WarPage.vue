@@ -4,7 +4,7 @@
       <h1 class="title">Charakter-Übersicht</h1>
 
       <div class="top-buttons">
-        <q-btn color="primary" label="Gegneranalyse" @click="goToOpponent" flat />
+        <q-btn color="secondary" label="Gegneranalyse" @click="goToOpponent" flat />
         <q-btn color="secondary" label="Charakter suchen" @click="goToSearch" flat />
       </div>
 
@@ -36,12 +36,51 @@
           <div class="table-row" v-for="m in sortedMembers" :key="m.memberName">
             <span class="name">{{ m.memberName }}</span>
             <span class="tier">
-              {{ m.currentTier == 13 ? 'R' + (m.relic.currentTier - 2) : 'G' + m.currentTier }}
+              {{ formatTier(m) }}
             </span>
           </div>
         </div>
 
         <q-btn class="close-btn" color="primary" label="Schließen" @click="dialogOpen = false" />
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="searchDialogOpen">
+      <q-card class="dialog-card search-dialog">
+        <h2 class="dialog-title">Charakter suchen</h2>
+
+        <!-- Suchfeld -->
+        <q-input
+          v-model="searchQuery"
+          filled
+          dense
+          placeholder="Charaktername suchen…"
+          class="search-input mb-4"
+          color="yellow"
+          input-class="text-white"
+          bg-color="dark"
+          style="margin-bottom: 20px"
+        />
+
+        <!-- Scrollbare Liste -->
+        <div class="search-list">
+          <div
+            v-for="unit in filteredUnits"
+            :key="unit.name"
+            class="search-row"
+            @click="openFromSearch(unit)"
+          >
+            {{ unit.name }}
+            <span class="count">{{ unit.members.length }}</span>
+          </div>
+        </div>
+
+        <q-btn
+          class="close-btn"
+          color="primary"
+          label="Schließen"
+          @click="searchDialogOpen = false"
+        />
       </q-card>
     </q-dialog>
   </q-page>
@@ -57,10 +96,21 @@ const $q = useQuasar()
 const playerStore = usePlayerStore()
 const guildStore = useGuildStore()
 const guildUnits = ref([])
+const allUnits = ref([])
 
 const totalMembers = ref(0)
 const dialogOpen = ref(false)
 const selectedCharacter = ref(null)
+
+const searchDialogOpen = ref(false)
+const searchQuery = ref('')
+
+const filteredUnits = computed(() => {
+  if (!searchQuery.value) return allUnits.value
+  return allUnits.value.filter((u) =>
+    u.name?.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  )
+})
 
 function openDialog(item) {
   selectedCharacter.value = item
@@ -68,32 +118,74 @@ function openDialog(item) {
 }
 
 function goToOpponent() {
-  console.log('Gegneranalyse öffnen…')
+  $q.notify({
+    message: 'Comming Soon...',
+    type: 'negative',
+  })
 }
 
-function goToSearch() {
-  console.log('Charaktersuche öffnen…')
+async function goToSearch() {
+  $q.loading.show()
+  await playerStore.loadAllUnits()
+  $q.loading.hide()
+  allUnits.value = playerStore.getUnitData
+  console.log(guildUnits.value)
+  searchDialogOpen.value = true
+}
+
+async function openFromSearch(item) {
+  searchDialogOpen.value = false
+  openDialog(item)
+}
+
+function formatTier(m) {
+  const isShip = m.unitPrefab?.toLowerCase().includes('ship')
+
+  if (isShip) {
+    return `⭐${m.currentRarity || 0}`
+  }
+
+  // CHARACTER
+  if (m.currentTier === 13) {
+    const rel = m.relic?.currentTier ? m.relic.currentTier - 2 : 1
+    return `R${rel}`
+  }
+
+  return `G${m.currentTier}`
 }
 
 const sortedMembers = computed(() => {
   if (!selectedCharacter.value?.members) return []
 
   return [...selectedCharacter.value.members].sort((a, b) => {
+    const aIsShip = a.unitPrefab?.toLowerCase().includes('ship') || false
+    const bIsShip = b.unitPrefab?.toLowerCase().includes('ship') || false
+
+    // 1. CHARACTERS oben, SHIPS unten
+    if (!aIsShip && bIsShip) return -1
+    if (aIsShip && !bIsShip) return 1
+
+    // 2. Wenn beide SHIP → nach Rarity sortieren
+    if (aIsShip && bIsShip) {
+      return (b.currentRarity || 0) - (a.currentRarity || 0)
+    }
+
+    // 3. Wenn beide UNITS → alte Relic/Gear Logik
     const aIsRelic = a.currentTier === 13
     const bIsRelic = b.currentTier === 13
 
-    // 1. Relics zuerst
+    // Relics vor Gear
     if (aIsRelic && !bIsRelic) return -1
     if (!aIsRelic && bIsRelic) return 1
 
-    // 2. Wenn beides Relics → nach Relic Tier sortieren
+    // Relic → nach Relic Level sortieren
     if (aIsRelic && bIsRelic) {
       const aRel = a.relic?.currentTier || 2
       const bRel = b.relic?.currentTier || 2
       return bRel - aRel
     }
 
-    // 3. Wenn beide Gear → nach Gear absteigend
+    // Gear
     return b.currentTier - a.currentTier
   })
 })
@@ -103,10 +195,8 @@ onMounted(async () => {
   await playerStore.loadPlayerData()
   await guildStore.loadGuildData()
   $q.loading.hide()
-  console.log(guildStore.getGuildData)
   totalMembers.value = guildStore.getGuildData.guild.member.length
   guildUnits.value = playerStore.getPlayerData
-  console.log(guildUnits.value)
 })
 </script>
 
@@ -210,7 +300,7 @@ onMounted(async () => {
 
 .dialog-title {
   font-size: 1.6rem;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   text-align: center;
   color: #ffe81f;
 }
@@ -233,8 +323,9 @@ onMounted(async () => {
 }
 
 .close-btn {
-  width: 100%;
-  margin-top: 14px;
+  max-width: 100%;
+  margin-top: 15px;
+  position: relative;
 }
 
 .dialog-card {
@@ -277,5 +368,28 @@ onMounted(async () => {
 .close-btn {
   width: 100%;
   margin-top: 20px;
+}
+
+.search-list {
+  height: 45vh;
+  overflow-y: auto;
+}
+
+.search-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 232, 31, 0.15);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.search-row .count {
+  opacity: 0.7;
+  position: relative;
+  right: 20px;
 }
 </style>

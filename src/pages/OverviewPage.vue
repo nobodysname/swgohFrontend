@@ -114,20 +114,41 @@ const topMembers = computed(() => {
   background: url('./public/icons/BGTest.PNG') center/cover no-repeat fixed;
   color: #eee;
   min-height: 100vh;
-
-  > * {
-    backdrop-filter: blur(4px);
-    background: #1a1a1aa4;
-  }
 }
 
+.overview-card,
+.ranking-card,
+.section {
+  backdrop-filter: blur(4px);
+  background: #1a1a1aa4;
+}
+
+/* --- GRID --- */
 .overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   grid-gap: 20px;
   margin-bottom: 40px;
 }
 
+/* RESPONSIVE Breakpoints */
+@media (max-width: 1100px) {
+  .overview-grid {
+    grid-template-columns: 1fr; /* 1 Spalte */
+  }
+
+  .overview-card,
+  .ranking-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .circle-wrapper {
+    margin: 0 auto;
+  }
+}
+
+/* --- Cards --- */
 .overview-card {
   border-radius: 12px;
   padding: 20px;
@@ -137,9 +158,16 @@ const topMembers = computed(() => {
   border: 1px solid #333;
 }
 
+.ranking-card {
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+/* --- Circle --- */
 .circle-wrapper {
-  width: 140px;
-  height: 140px;
+  width: clamp(100px, 25vw, 140px);
+  height: clamp(100px, 25vw, 140px);
 }
 
 .circular-chart {
@@ -166,6 +194,7 @@ const topMembers = computed(() => {
   text-anchor: middle;
 }
 
+/* --- Text --- */
 .stats-text {
   display: flex;
   flex-direction: column;
@@ -183,12 +212,7 @@ const topMembers = computed(() => {
   margin-bottom: 10px;
 }
 
-.ranking-card {
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #333;
-}
-
+/* --- Ranking --- */
 .rank-item {
   display: flex;
   justify-content: space-between;
@@ -196,6 +220,13 @@ const topMembers = computed(() => {
   border-bottom: 1px solid #333;
 }
 
+@media (max-width: 550px) {
+  .rank-item {
+    font-size: 0.9rem;
+  }
+}
+
+/* --- Section --- */
 .section {
   margin-top: 40px;
   padding: 20px;
@@ -204,10 +235,18 @@ const topMembers = computed(() => {
 }
 
 .info-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   padding: 8px 0;
   border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .info-row {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 8px;
+  }
 }
 
 .empty-text {

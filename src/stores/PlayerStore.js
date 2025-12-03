@@ -11,6 +11,9 @@ export const usePlayerStore = defineStore('Player', {
     getPlayerData: (state) => {
       return state.player
     },
+    getUnitData: (state) => {
+      return state.units
+    },
   },
 
   actions: {
