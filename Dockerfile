@@ -15,7 +15,7 @@ RUN quasar build
 RUN quasar build
 
 # Container-Port
-EXPOSE 8080
+EXPOSE 80
 
 # Frontend-Server starten
 CMD ["node", "server.cjs"]

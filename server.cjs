@@ -5,7 +5,7 @@ const path = require('path')
 const app = express()
 
 // Port (Standard: 3000 oder aus ENV)
-const port = 8080
+const port = 80
 
 // Pfad zum gebauten Quasar-Frontend
 const distPath = path.join(__dirname, 'dist/spa')
