@@ -1,14 +1,15 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Dependencies installieren
+# Dependencies + Projektcode kopieren, damit quasar prepare läuft
 COPY package*.json ./
+COPY . .
+
 RUN npm install -g @quasar/cli
 RUN npm install
+RUN quasar build
 
-# Quasar Code kopieren
-COPY . .
 
 # SPA bauen
 RUN quasar build
