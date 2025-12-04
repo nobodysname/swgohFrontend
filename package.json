@@ -2,8 +2,8 @@
   "name": "swgoh",
   "version": "0.0.1",
   "description": "A Quasar Project",
-  "productName": "Quasar App",
-  "author": "Luca <luca.bonasegla@telekom.de>",
+  "productName": "The Ginwalkers",
+  "author": "Luca <lucabonasegla@gmail.com>",
   "type": "module",
   "private": true,
   "scripts": {

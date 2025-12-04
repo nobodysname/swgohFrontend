@@ -3,9 +3,7 @@
     <q-header elevated class="bg-primary text-white" height-hint="98">
       <q-toolbar>
         <q-toolbar-title>
-          <q-avatar>
-            <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
-          </q-avatar>
+          <q-avatar> </q-avatar>
           The Ginwalkers
         </q-toolbar-title>
       </q-toolbar>
@@ -22,3 +20,10 @@
     </q-page-container>
   </q-layout>
 </template>
+
+<style scoped lang="scss">
+.page-container {
+  background: url('./public/icons/BGTest.PNG') center/cover no-repeat fixed;
+  color: #fff;
+}
+</style>
