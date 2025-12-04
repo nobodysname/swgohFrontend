@@ -1,0 +1,7 @@
+services:
+  ginwalkers-frontend:
+    build: .
+    ports:
+      - '443:443'
+    volumes:
+      - /home/linux/ssl/ginwalkers:/etc/ssl/ginwalkers:ro

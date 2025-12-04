@@ -207,7 +207,7 @@ body {
   padding: 0;
 }
 .page-container {
-  min-height: 10vh;
+  min-height: 100vh;
   padding: 10px;
   background: url('/icons/BGTest.webp') center/cover no-repeat fixed;
   color: white;
