@@ -7,3 +7,7 @@ services:
       - /home/linux/ssl/ginwalkers:/etc/ssl/ginwalkers:ro
     networks:
       - swgoh-comlink
+
+networks:
+  swgoh-comlink:
+    external: true
