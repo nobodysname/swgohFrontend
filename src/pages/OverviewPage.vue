@@ -17,20 +17,22 @@
                  a 15.9155 15.9155 0 0 1 0 31.831
                  a 15.9155 15.9155 0 0 1 0 -31.831"
             />
-            <text x="18" y="20.35" class="percentage-text">{{ memberPercentage }}%</text>
+            <text x="18" y="20.35" class="percentage-text">
+              {{ memberPercentage ? memberPercentage : 0 }}%
+            </text>
           </svg>
         </div>
         <div class="stats-text">
           <div class="stat-label">Members</div>
-          <div class="stat-value">{{ guildData.member.length }}/50</div>
+          <div class="stat-value">{{ guildData.member?.length }}/50</div>
           <div class="stat-label">Total GP</div>
           <div class="stat-value">
             {{
-              guildData.profile.guildGalacticPower.substring(0, 3) +
+              guildData.profile?.guildGalacticPower.substring(0, 3) +
               '.' +
-              guildData.profile.guildGalacticPower.substring(3, 6) +
+              guildData.profile?.guildGalacticPower.substring(3, 6) +
               '.' +
-              guildData.profile.guildGalacticPower.substring(6, 9)
+              guildData.profile?.guildGalacticPower.substring(6, 9)
             }}
           </div>
         </div>
@@ -58,7 +60,7 @@
   -->
     <div class="section">
       <h2>Recent Territory Wars</h2>
-      <div v-if="guildData.recentTerritoryWarResult.length === 0" class="empty-text">
+      <div v-if="guildData.recentTerritoryWarResult?.length === 0" class="empty-text">
         No Territory War data available.
       </div>
       <div class="info-row">

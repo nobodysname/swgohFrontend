@@ -22,3 +22,9 @@
     </q-page-container>
   </q-layout>
 </template>
+
+<style>
+html {
+  background-color: black;
+}
+</style>
