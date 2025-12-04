@@ -210,6 +210,7 @@ body {
   min-height: 10vh;
   padding: 10px;
   background: url('/icons/BGTest.PNG') center/cover no-repeat fixed;
+  color: white;
 }
 
 .content-wrapper {
