@@ -8,7 +8,7 @@
 .page-container {
   min-height: 110vh;
   padding: 32px;
-  background: url('./public/icons/BGTest.PNG') center/cover no-repeat fixed;
+  background: url('./public/icons/BGTest.webp') center/cover no-repeat fixed;
   color: #fff;
 }
 </style>
