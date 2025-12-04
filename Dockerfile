@@ -7,7 +7,7 @@ COPY package*.json ./
 COPY . .
 
 RUN npm install
-RUN quasar build
+RUN npx quasar build
 
 
 # SPA bauen
