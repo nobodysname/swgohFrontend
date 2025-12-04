@@ -9,10 +9,6 @@ COPY . .
 RUN npm install
 RUN npx quasar build
 
-
-# SPA bauen
-RUN quasar build
-
 # Container-Port
 EXPOSE 443
 
