@@ -1,6 +1,6 @@
 <template>
-  <q-page class="page-container" v-if="guildData">
-    <div class="overview-grid">
+  <q-page class="page-container">
+    <div class="overview-grid" v-if="guildData">
       <div class="overview-card">
         <div class="circle-wrapper">
           <svg viewBox="0 0 36 36" class="circular-chart">
