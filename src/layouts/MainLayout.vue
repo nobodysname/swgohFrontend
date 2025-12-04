@@ -13,7 +13,7 @@
       <q-tabs align="left">
         <q-route-tab to="/" label="Overview" />
         <q-route-tab to="/war" label="Territory War" />
-        <q-route-tab to="/battle" label="Territory Battle" />
+        <!-- <q-route-tab to="/battle" label="Territory Battle" /> -->
       </q-tabs>
     </q-header>
 
