@@ -201,11 +201,15 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
 .page-container {
-  min-height: 110vh;
-  padding: 32px;
+  min-height: 10vh;
+  padding: 10px;
   background: url('/icons/BGTest.PNG') center/cover no-repeat fixed;
-  color: #fff;
 }
 
 .content-wrapper {
