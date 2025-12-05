@@ -60,7 +60,7 @@
   -->
     <div class="section">
       <h2>Recent Territory Wars</h2>
-      <div v-if="guildData.recentTerritoryWarResult?.length === 0" class="empty-text">
+      <div v-if="guildData?.recentTerritoryWarResult?.length === 0" class="empty-text">
         No Territory War data available.
       </div>
       <div class="info-row">
@@ -69,7 +69,11 @@
         <span><strong>Opponent Score</strong></span>
         <span><strong>Guild GP</strong></span>
       </div>
-      <div v-for="w in guildData.recentTerritoryWarResult" :key="w.territoryWarId" class="info-row">
+      <div
+        v-for="w in guildData?.recentTerritoryWarResult ? guildData.recentTerritoryWarResult : []"
+        :key="w?.territoryWarId"
+        class="info-row"
+      >
         <span> {{ w.score - w.opponentScore > 0 ? 'Win' : 'Loss' }} </span>
         <span>{{ w.score }}</span>
         <span>{{ w.opponentScore }}</span>
