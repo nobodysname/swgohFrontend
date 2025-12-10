@@ -29,9 +29,10 @@ export const useGetGuildsStore = defineStore('getGuilds', {
       }
     },
     async loadGuildData(guild) {
+      console.log(guild)
       try {
         const response = await api.post('/getGuild', {
-          id: guild.id,
+          id: guild,
           name: this.name,
         })
         this.guild = response.data
