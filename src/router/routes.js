@@ -6,6 +6,11 @@ const routes = [
       { path: '/', component: () => import('src/pages/OverviewPage.vue') },
       { path: '/war', component: () => import('src/pages/WarPage.vue') },
       { path: '/battle', component: () => import('src/pages/BattlePage.vue') },
+      {
+        path: '/opponent-analysis/:id',
+        name: 'opponent-analysis',
+        component: () => import('pages/OpponentAnalysisPage.vue'),
+      },
     ],
   },
 

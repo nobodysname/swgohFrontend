@@ -4,6 +4,7 @@
       <h1 class="title">Charakter-Übersicht</h1>
 
       <div class="top-buttons">
+        <q-btn color="secondary" label="Strategy" @click="goToStrategy" flat />
         <q-btn color="secondary" label="Gegneranalyse" @click="goToOpponent" flat />
         <q-btn color="secondary" label="Charakter suchen" @click="goToSearch" flat />
       </div>
@@ -83,6 +84,56 @@
         />
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="opponentDialog">
+      <q-card class="dialog-card opponent-dialog align-top">
+        <h2 class="dialog-title">Gegneranalyse</h2>
+
+        <!-- Suchfeld -->
+        <q-input
+          v-model="searchGuild"
+          label="Gildenname suchen"
+          filled
+          color="yellow"
+          input-class="text-white"
+          dark
+          bg-color="dark"
+          class="search-input opponent-input mb-4"
+          @keyup.enter="searchOpponentGuild"
+        >
+          <template #append>
+            <q-btn flat dense round icon="search" @click="searchOpponentGuild" />
+          </template>
+        </q-input>
+
+        <!-- Trefferliste -->
+        <div class="results-container" v-if="guildResults.length > 0">
+          <div
+            v-for="g in guildResults"
+            :key="g.id"
+            class="result-item"
+            @click="selectOpponentGuild(g)"
+          >
+            <div class="result-name">{{ g.name }}</div>
+          </div>
+        </div>
+
+        <!-- Keine Ergebnisse -->
+        <div v-else-if="searchPerformed" class="no-results">Keine Gilde gefunden …</div>
+        <q-space v-else />
+
+        <!-- Close Button immer ganz unten -->
+        <div class="dialog-footer">
+          <q-btn
+            class="close-btn"
+            color="primary"
+            flat
+            label="Schließen"
+            @click="opponentDialog = false"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -91,10 +142,12 @@ import { useQuasar } from 'quasar'
 import { onMounted, ref, computed } from 'vue'
 import { usePlayerStore } from 'src/stores/PlayerStore'
 import { useGuildStore } from 'src/stores/GuildStore'
+import { useGetGuildsStore } from 'src/stores/GetGuildStore'
 
 const $q = useQuasar()
 const playerStore = usePlayerStore()
 const guildStore = useGuildStore()
+const getGuildStore = useGetGuildsStore()
 const guildUnits = ref([])
 const allUnits = ref([])
 
@@ -104,6 +157,11 @@ const selectedCharacter = ref(null)
 
 const searchDialogOpen = ref(false)
 const searchQuery = ref('')
+
+const opponentDialog = ref(false)
+const searchGuild = ref('')
+const guildResults = ref([])
+const searchPerformed = ref(false)
 
 const filteredUnits = computed(() => {
   if (!searchQuery.value) return allUnits.value
@@ -118,10 +176,7 @@ function openDialog(item) {
 }
 
 function goToOpponent() {
-  $q.notify({
-    message: 'Comming Soon...',
-    type: 'negative',
-  })
+  opponentDialog.value = true
 }
 
 async function goToSearch() {
@@ -129,13 +184,19 @@ async function goToSearch() {
   await playerStore.loadAllUnits()
   $q.loading.hide()
   allUnits.value = playerStore.getUnitData
-  console.log(guildUnits.value)
   searchDialogOpen.value = true
 }
 
 async function openFromSearch(item) {
   searchDialogOpen.value = false
   openDialog(item)
+}
+
+function goToStrategy() {
+  $q.notify({
+    color: 'negative',
+    message: 'Comming Soon...',
+  })
 }
 
 function formatTier(m) {
@@ -153,7 +214,6 @@ function formatTier(m) {
 
   return `G${m.currentTier}`
 }
-
 const sortedMembers = computed(() => {
   if (!selectedCharacter.value?.members) return []
 
@@ -190,6 +250,36 @@ const sortedMembers = computed(() => {
   })
 })
 
+async function searchOpponentGuild() {
+  if (!searchGuild.value.trim()) return
+
+  searchPerformed.value = false
+  guildResults.value = []
+
+  try {
+    $q.loading.show()
+    await getGuildStore.loadGuildNames(searchGuild.value)
+    guildResults.value = getGuildStore.getGuildNames // erwartet Array: [{ name, id }]
+    searchPerformed.value = true
+    $q.loading.hide()
+  } catch (e) {
+    console.error('Fehler beim Laden der Gegner-Gilden:', e)
+    searchPerformed.value = true
+  }
+}
+
+// Beim Klick auf Treffer
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+async function selectOpponentGuild(guild) {
+  await getGuildStore.setName(guild.name)
+  router.push({
+    name: 'opponent-analysis',
+    params: { id: guild.id }, // oder guild.profileId – je nachdem was dein Backend erwartet
+  })
+}
+
 onMounted(async () => {
   $q.loading.show()
   await playerStore.loadPlayerData()
@@ -206,6 +296,7 @@ body {
   margin: 0;
   padding: 0;
 }
+
 .page-container {
   min-height: 100vh;
   padding: 10px;
@@ -222,7 +313,7 @@ body {
 .title {
   font-family: 'Star Jedi', sans-serif;
   text-align: center;
-  font-size: 2.6rem;
+  font-size: 2.3rem;
   margin-bottom: 20px;
   color: #ffe81f;
   text-shadow: 0 0 12px #ffe81f;
@@ -232,10 +323,14 @@ body {
 .top-buttons {
   display: flex;
   justify-content: flex-end;
+  flex-direction: row;
+
   gap: 12px;
   margin-bottom: 24px;
 
   button {
+    max-width: 33%;
+    font-size: 0.9rem;
     backdrop-filter: blur(6px);
     background: rgba(0, 0, 0, 0.35) !important;
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -294,53 +389,29 @@ body {
   }
 }
 
-/* Dialog Design */
+/* --- EINHEITLICHES DIALOG DESIGN (zusammengefasst) --- */
 .dialog-card {
-  width: 420px;
+  width: 600px;
+  max-width: 95vw;
   background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 232, 31, 0.25);
+  border: 1px solid rgba(255, 232, 31, 0.35);
+  border-radius: 18px;
   padding: 24px;
   color: #fff;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
 }
 
 .dialog-title {
-  font-size: 1.6rem;
-  margin-bottom: 10px;
   text-align: center;
+  font-family: 'Star Jedi', sans-serif;
   color: #ffe81f;
+  font-size: 1.9rem;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px #ffe81f;
 }
 
-.member-list {
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.member-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 232, 31, 0.15);
-
-  .level {
-    opacity: 0.9;
-    font-weight: 600;
-  }
-}
-
-.close-btn {
-  max-width: 100%;
-  margin-top: 15px;
-  position: relative;
-}
-
-.dialog-card {
-  width: 600px; /* jetzt breiter */
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 232, 31, 0.25);
-  padding: 24px;
-  color: #fff;
-}
-
+/* Tabellen in Character-Dialog */
 .member-table {
   max-height: 55vh;
   overflow-y: auto;
@@ -370,11 +441,18 @@ body {
   padding-left: 10px;
 }
 
+/* --- EINHEITLICHER CLOSE BUTTON --- */
 .close-btn {
   width: 100%;
   margin-top: 20px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 232, 31, 0.25) !important;
+  color: #ffe81f !important;
+  font-weight: 600;
+  border-radius: 10px;
 }
 
+/* --- SEARCH DIALOG --- */
 .search-list {
   height: 45vh;
   overflow-y: auto;
@@ -396,5 +474,76 @@ body {
   opacity: 0.7;
   position: relative;
   right: 20px;
+}
+
+/* Input Styling einheitlich */
+.search-input :deep(input),
+.opponent-input :deep(input) {
+  color: white !important;
+}
+
+/* --- GEGNERANALYSE DIALOG (zusammengeführt) --- */
+.opponent-dialog {
+  width: 650px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Trefferliste & No-Result zusammengefasst */
+.results-container,
+.no-results {
+  flex: 1;
+  margin-top: 14px;
+}
+
+.results-container {
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.no-results {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+/* Trefferitems */
+.result-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 232, 31, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 232, 31, 0.12);
+    transform: translateY(-2px);
+  }
+}
+
+.result-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.result-id {
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+/* Footer */
+.dialog-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 232, 31, 0.3);
+}
+
+/* Utility */
+.align-top {
+  justify-content: start;
 }
 </style>

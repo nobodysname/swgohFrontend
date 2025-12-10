@@ -69,11 +69,7 @@
         <span><strong>Opponent Score</strong></span>
         <span><strong>Guild GP</strong></span>
       </div>
-      <div
-        v-for="w in guildData?.recentTerritoryWarResult ? guildData.recentTerritoryWarResult : []"
-        :key="w?.territoryWarId"
-        class="info-row"
-      >
+      <div v-for="w in sortedTerritoryWars" :key="w?.territoryWarId" class="info-row">
         <span> {{ w.score - w.opponentScore > 0 ? 'Win' : 'Loss' }} </span>
         <span>{{ w.score }}</span>
         <span>{{ w.opponentScore }}</span>
@@ -100,6 +96,14 @@ const guildData = ref()
 onMounted(async () => {
   await guildStore.loadGuildData()
   guildData.value = guildStore.getGuildData.guild
+})
+
+const sortedTerritoryWars = computed(() => {
+  if (!guildData.value?.recentTerritoryWarResult) return []
+
+  return [...guildData.value.recentTerritoryWarResult].sort(
+    (a, b) => b.endTimeSeconds - a.endTimeSeconds,
+  )
 })
 
 const memberPercentage = computed(() => {
