@@ -5,8 +5,8 @@
 
       <div class="top-buttons">
         <q-btn color="secondary" label="Strategy" @click="goToStrategy" flat />
-        <q-btn color="secondary" label="Gegneranalyse" @click="goToOpponent" flat />
-        <q-btn color="secondary" label="Charakter suchen" @click="goToSearch" flat />
+        <q-btn color="secondary" label="Opponent Analysis" @click="goToOpponent" flat />
+        <q-btn color="secondary" label="search Charakter" @click="goToSearch" flat />
       </div>
 
       <div class="character-grid">
@@ -30,8 +30,8 @@
 
         <div class="member-table">
           <div class="table-header">
-            <span>Mitglied</span>
-            <span>Stufe</span>
+            <span>Member</span>
+            <span>Level</span>
           </div>
 
           <div class="table-row" v-for="m in sortedMembers" :key="m.memberName">
@@ -42,20 +42,20 @@
           </div>
         </div>
 
-        <q-btn class="close-btn" color="primary" label="Schließen" @click="dialogOpen = false" />
+        <q-btn class="close-btn" color="primary" label="Close" @click="dialogOpen = false" />
       </q-card>
     </q-dialog>
 
     <q-dialog v-model="searchDialogOpen">
       <q-card class="dialog-card search-dialog">
-        <h2 class="dialog-title">Charakter suchen</h2>
+        <h2 class="dialog-title">search Character</h2>
 
         <!-- Suchfeld -->
         <q-input
           v-model="searchQuery"
           filled
           dense
-          placeholder="Charaktername suchen…"
+          placeholder="search Charactername"
           class="search-input mb-4"
           color="yellow"
           input-class="text-white"
@@ -76,23 +76,18 @@
           </div>
         </div>
 
-        <q-btn
-          class="close-btn"
-          color="primary"
-          label="Schließen"
-          @click="searchDialogOpen = false"
-        />
+        <q-btn class="close-btn" color="primary" label="Close" @click="searchDialogOpen = false" />
       </q-card>
     </q-dialog>
 
     <q-dialog v-model="opponentDialog">
       <q-card class="dialog-card opponent-dialog align-top">
-        <h2 class="dialog-title">Gegneranalyse</h2>
+        <h2 class="dialog-title">Opponent Analysis</h2>
 
         <!-- Suchfeld -->
         <q-input
           v-model="searchGuild"
-          label="Gildenname suchen"
+          label="enter guildname..."
           filled
           color="yellow"
           input-class="text-white"
@@ -119,7 +114,7 @@
         </div>
 
         <!-- Keine Ergebnisse -->
-        <div v-else-if="searchPerformed" class="no-results">Keine Gilde gefunden …</div>
+        <div v-else-if="searchPerformed" class="no-results">No Guild found …</div>
         <q-space v-else />
 
         <!-- Close Button immer ganz unten -->
@@ -128,7 +123,7 @@
             class="close-btn"
             color="primary"
             flat
-            label="Schließen"
+            label="Close"
             @click="opponentDialog = false"
           />
         </div>
