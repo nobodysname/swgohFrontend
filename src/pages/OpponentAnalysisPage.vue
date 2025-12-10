@@ -213,6 +213,10 @@
                   </div>
                 </q-scroll-area>
 
+                <div class="squad-result-count" v-if="selectedSquad.length >= 2">
+                  Showing {{ squadMembers.length }} results
+                </div>
+
                 <div class="close-wrap">
                   <q-btn flat color="yellow" label="Close" @click="squadDialog = false" />
                 </div>
@@ -543,13 +547,27 @@ const squadMembers = computed(() => {
     if (!valid) continue
 
     // Relic-Filter auf Basis des ersten Charakters
+    // --- Relic-Filter: Jetzt für ALLE ausgewählten Charaktere ---
     if (relicThreshold != null) {
-      const firstUnit = oppUnits.value.find((u) => u.name === firstCharName)
-      const firstMember = firstUnit?.members.find((m) => m.memberName === memberName)
+      for (const charName of selectedSquad.value) {
+        const unit = oppUnits.value.find((u) => u.name === charName)
+        const member = unit?.members.find((m) => m.memberName === memberName)
 
-      const relicLevel = getRelicLevel(firstMember)
+        if (!member) {
+          valid = false
+          break
+        }
 
-      if (relicLevel < relicThreshold) continue
+        const relicLevel = getRelicLevel(member)
+
+        // wenn irgendeiner der gewählten Charaktere zu niedrig ist → raus
+        if (relicLevel < relicThreshold) {
+          valid = false
+          break
+        }
+      }
+
+      if (!valid) continue
     }
 
     result.push(row)
@@ -1059,7 +1077,8 @@ onMounted(loadData)
   border: 1px solid rgba(255, 232, 31, 0.3);
   border-radius: 18px;
   backdrop-filter: blur(12px);
-  color: #ffe81f;
+  color: #ffffff;
+  font-size: 1.1em;
 }
 
 .squad-title {
@@ -1105,5 +1124,16 @@ onMounted(loadData)
   max-height: 400px;
   overflow: hidden; // übernimmt q-scroll-area
   margin-top: 10px;
+}
+
+.squad-result-count {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ffe81f;
+  opacity: 0.9;
+  text-shadow: 0 0 6px rgba(255, 232, 31, 0.45);
 }
 </style>
