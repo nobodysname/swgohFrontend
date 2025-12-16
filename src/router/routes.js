@@ -11,6 +11,7 @@ const routes = [
         name: 'opponent-analysis',
         component: () => import('pages/OpponentAnalysisPage.vue'),
       },
+      { path: '/strategy', component: () => import('src/pages/StrategyPage.vue') },
     ],
   },
 

@@ -136,13 +136,7 @@
                   Showing {{ filteredMembers.length }} / {{ selectedUnit?.members.length }}
                 </div>
 
-                <q-btn
-                  flat
-                  label="Close"
-                  color="primary"
-                  class="q-mt-md"
-                  @click="charDetailOpen = false"
-                />
+                <q-btn flat dark label="Close" class="q-mt-md" @click="charDetailOpen = false" />
               </q-card>
             </q-dialog>
 
@@ -163,7 +157,7 @@
                     dark
                     use-chips
                     multiple
-                    style="width: 100%; margin-right: 5px"
+                    style="width: 50%; margin-right: 5px"
                     use-input
                     max-values="5"
                     label-color="white"
@@ -174,7 +168,7 @@
                   />
                   <q-select
                     v-model="activeRelicFilter"
-                    style="width: 100%"
+                    style="min-width: 50%"
                     :options="[
                       { label: 'No relic filter', value: null },
                       { label: 'Relic ≥ 1', value: 1 },
@@ -218,7 +212,7 @@
                 </div>
 
                 <div class="close-wrap">
-                  <q-btn flat color="yellow" label="Close" @click="squadDialog = false" />
+                  <q-btn flat color="yellow" dark label="Close" @click="squadDialog = false" />
                 </div>
               </q-card>
             </q-dialog>
@@ -622,17 +616,25 @@ onMounted(loadData)
 
 <style scoped lang="scss">
 .page-container {
-  padding: 20px;
+  padding: 16px;
   background: url('/icons/BGTest.webp') center/cover no-repeat fixed;
   min-height: 100vh;
   color: white;
+
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Gleicher Wrapper wie Charakterübersicht → komplett transparent */
 .content-wrapper {
   max-width: 1500px;
+  width: 100%;
   margin: 0 auto;
+  padding: 0;
   background: transparent !important;
+  box-sizing: border-box;
 }
 
 /* Titel – exakt dieselben Werte */
@@ -757,6 +759,7 @@ onMounted(loadData)
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
   padding: 6px 20px;
+  max-width: 100%;
   border-radius: 12px;
   border: 1px solid rgba(255, 232, 31, 0.25);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
@@ -1070,7 +1073,9 @@ onMounted(loadData)
 }
 
 .squad-card-modern {
-  width: 900px;
+  width: min(900px, 100%);
+  max-width: 95vw;
+  box-sizing: border-box;
   max-width: 95vw;
   padding: 30px;
   background: rgba(0, 0, 0, 0.85);
@@ -1135,5 +1140,166 @@ onMounted(loadData)
   color: #ffe81f;
   opacity: 0.9;
   text-shadow: 0 0 6px rgba(255, 232, 31, 0.45);
+}
+
+.page-container {
+  padding: 20px;
+  background: url('/icons/BGTest.webp') center/cover no-repeat fixed;
+  min-height: 100vh;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-wrapper {
+  max-width: 1500px;
+  margin: 0 auto;
+  background: transparent !important;
+}
+
+/* Titel */
+.title {
+  font-family: 'Star Jedi', sans-serif;
+  text-align: center;
+  font-size: 2.6rem;
+  margin-bottom: 20px;
+  color: #ffe81f;
+  text-shadow: 0 0 12px #ffe81f;
+}
+
+/* Hauptbereich, Tab und Content */
+.analysis-header,
+.analysis-tabs {
+  margin-bottom: 25px;
+}
+
+.strategy-layout {
+  display: grid;
+  grid-template-columns: 1fr 3fr; /* Anpassung für größere Bildschirme */
+  gap: 20px;
+}
+
+.map-panel {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+/* Anpassung für die Zone Panel */
+.zone-panel {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 232, 31, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+  flex-grow: 1;
+}
+
+/* Scrollbar für die Zone */
+.zone-rows-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  mask-image: linear-gradient(to bottom, black 90%, transparent);
+}
+
+/* Anpassungen für die Buttons */
+.add-row-btn,
+.delete-btn {
+  position: sticky;
+  bottom: 0;
+  margin-top: 12px;
+  z-index: 5;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 1024px) {
+  .strategy-layout {
+    grid-template-columns: 1fr; /* Für Tablets: 1 Spalte */
+  }
+
+  .map-panel {
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    overflow-x: auto;
+  }
+
+  .zone-panel {
+    height: auto;
+    max-height: none;
+  }
+
+  .zone-rows-scroll {
+    max-height: 60vh;
+  }
+}
+
+@media (max-width: 600px) {
+  .map-panel {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+
+  .zone-tile {
+    min-width: 140px;
+    padding: 14px 10px;
+    font-size: 0.9rem;
+    border-radius: 14px;
+    text-align: center;
+  }
+
+  .zone-tile.active {
+    background: #ffe81f;
+    color: #000;
+    box-shadow: 0 0 12px rgba(255, 232, 31, 0.8);
+  }
+
+  .zone-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding-bottom: 36px;
+  }
+
+  .delete-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  /* Modal und Tabs für mobile */
+  .char-header,
+  .zone-header {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .zone-panel {
+    padding: 10px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 375px) {
+  /* Weitere Optimierungen für kleine Geräte */
+  .title {
+    font-size: 1.8rem;
+  }
+
+  .zone-tile {
+    font-size: 0.8rem;
+  }
+
+  .zone-header {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .squad-table-header,
+  .squad-table-row {
+    grid-template-columns: 140px repeat(5, minmax(60px, 1fr));
+  }
 }
 </style>

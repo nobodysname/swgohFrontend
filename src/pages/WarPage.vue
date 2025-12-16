@@ -129,6 +129,10 @@
         </div>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="strategyOpen" persistent maximized>
+      <StrategyPage @close="strategyOpen = false" />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -138,6 +142,9 @@ import { onMounted, ref, computed } from 'vue'
 import { usePlayerStore } from 'src/stores/PlayerStore'
 import { useGuildStore } from 'src/stores/GuildStore'
 import { useGetGuildsStore } from 'src/stores/GetGuildStore'
+import StrategyPage from './StrategyPage.vue'
+
+const strategyOpen = ref(false)
 
 const $q = useQuasar()
 const playerStore = usePlayerStore()
@@ -188,10 +195,8 @@ async function openFromSearch(item) {
 }
 
 function goToStrategy() {
-  $q.notify({
-    color: 'negative',
-    message: 'Comming Soon...',
-  })
+  router.push('/strategy')
+  strategyOpen.value = true
 }
 
 function formatTier(m) {
