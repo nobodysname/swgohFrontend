@@ -155,8 +155,6 @@ async function loadStrategy() {
       headers: { 'x-strategy-password': password.value },
     })
 
-    console.log('STRATEGY RESPONSE:', res.data)
-
     strategy.value = res.data
     role.value = res.data.role // <- MUSS "admin" sein
     passwordDialog.value = false
