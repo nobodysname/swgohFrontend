@@ -69,8 +69,8 @@
               </div>
 
               <!-- RELIC 9 -->
-              <div class="metric-label">Relic 9 Count</div>
-              <div class="bar-container">
+              <div v-if="!isShipUnit(unit)" class="metric-label">Relic 9 Count</div>
+              <div v-if="!isShipUnit(unit)" class="bar-container">
                 <!-- FALL: beide 0 → grauer Balken -->
                 <div
                   v-if="isBothZero(getMineRelicCount(unit, 9), getOppRelicCount(unit, 9))"
@@ -100,14 +100,14 @@
                 </template>
               </div>
 
-              <div class="metric-values">
+              <div v-if="!isShipUnit(unit)" class="metric-values">
                 <span class="blue-text">{{ getMineRelicCount(unit, 9) }}</span>
                 <span class="red-text">{{ getOppRelicCount(unit, 9) }}</span>
               </div>
 
               <!-- RELIC 10 -->
-              <div class="metric-label">Relic 10 Count</div>
-              <div class="bar-container">
+              <div v-if="!isShipUnit(unit)" class="metric-label">Relic 10 Count</div>
+              <div v-if="!isShipUnit(unit)" class="bar-container">
                 <!-- FALL: beide 0 → grauer Balken -->
                 <div
                   v-if="isBothZero(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10))"
@@ -137,7 +137,7 @@
                 </template>
               </div>
 
-              <div class="metric-values">
+              <div v-if="!isShipUnit(unit)" class="metric-values">
                 <span class="blue-text">{{ getMineRelicCount(unit, 10) }}</span>
                 <span class="red-text">{{ getOppRelicCount(unit, 10) }}</span>
               </div>
@@ -349,6 +349,13 @@ const omicronOnly = ref(false)
 
 const myUnits = ref([])
 const oppUnits = ref([])
+
+function isShipUnit(unitName) {
+  const unit = unitByName(myUnits.value, unitName) || unitByName(oppUnits.value, unitName)
+
+  const firstMember = unit?.members?.[0]
+  return firstMember?.unitPrefab?.toLowerCase().includes('ship')
+}
 
 async function loadData() {
   $q.loading.show()

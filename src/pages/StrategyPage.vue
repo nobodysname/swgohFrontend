@@ -230,7 +230,6 @@ async function deleteRow(rowId) {
 
 <style scoped>
 .strategy-page {
-  max-height: 100%; /* 🔥 entscheidend */
   overflow: hidden; /* Scroll NICHT hier */
   padding: 20px;
   color: #ffe81f;
@@ -245,7 +244,7 @@ async function deleteRow(rowId) {
   inset: 0;
   background: url('/icons/BGTest.webp') center / cover no-repeat;
   filter: blur(4px);
-  z-index: -1;
+  z-index: 0;
 }
 
 .title {
