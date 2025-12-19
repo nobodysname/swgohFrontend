@@ -123,7 +123,7 @@ const topMembers = computed(() => {
   padding: 20px;
   background: url('/icons/BGTest.webp') center/cover no-repeat fixed;
   color: #eee;
-  min-height: 100vh;
+  max-height: 100%;
 }
 
 .overview-card,

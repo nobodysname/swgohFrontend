@@ -67,6 +67,80 @@
                   {{ formatTierValueUniversal(getOppAverage(unit), unit) }}
                 </span>
               </div>
+
+              <!-- RELIC 9 -->
+              <div class="metric-label">Relic 9 Count</div>
+              <div class="bar-container">
+                <!-- FALL: beide 0 → grauer Balken -->
+                <div
+                  v-if="isBothZero(getMineRelicCount(unit, 9), getOppRelicCount(unit, 9))"
+                  class="bar neutral"
+                  style="width: 100%"
+                />
+
+                <!-- NORMALFALL -->
+                <template v-else>
+                  <div
+                    class="bar blue"
+                    :style="{
+                      width:
+                        getRelicPercent(getMineRelicCount(unit, 9), getOppRelicCount(unit, 9)) +
+                        '%',
+                    }"
+                  />
+                  <div
+                    class="bar red"
+                    :style="{
+                      width:
+                        100 -
+                        getRelicPercent(getMineRelicCount(unit, 9), getOppRelicCount(unit, 9)) +
+                        '%',
+                    }"
+                  />
+                </template>
+              </div>
+
+              <div class="metric-values">
+                <span class="blue-text">{{ getMineRelicCount(unit, 9) }}</span>
+                <span class="red-text">{{ getOppRelicCount(unit, 9) }}</span>
+              </div>
+
+              <!-- RELIC 10 -->
+              <div class="metric-label">Relic 10 Count</div>
+              <div class="bar-container">
+                <!-- FALL: beide 0 → grauer Balken -->
+                <div
+                  v-if="isBothZero(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10))"
+                  class="bar neutral"
+                  style="width: 100%"
+                />
+
+                <!-- NORMALFALL -->
+                <template v-else>
+                  <div
+                    class="bar blue"
+                    :style="{
+                      width:
+                        getRelicPercent(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10)) +
+                        '%',
+                    }"
+                  />
+                  <div
+                    class="bar red"
+                    :style="{
+                      width:
+                        100 -
+                        getRelicPercent(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10)) +
+                        '%',
+                    }"
+                  />
+                </template>
+              </div>
+
+              <div class="metric-values">
+                <span class="blue-text">{{ getMineRelicCount(unit, 10) }}</span>
+                <span class="red-text">{{ getOppRelicCount(unit, 10) }}</span>
+              </div>
             </div>
           </div>
         </q-tab-panel>
@@ -125,9 +199,20 @@
                   class="mb-3"
                 />
 
+                <q-toggle v-model="omicronOnly" color="yellow" label="Only Omicron" class="mb-3" />
+
                 <div class="member-list">
                   <div v-for="m in filteredMembers" :key="m.memberName" class="member-row">
-                    <span>{{ m.memberName }}</span>
+                    <span
+                      >{{ m.memberName }}
+                      <q-icon
+                        v-if="hasOmicron(m)"
+                        name="flare"
+                        color="yellow"
+                        size="16px"
+                        class="q-ml-xs"
+                    /></span>
+
                     <span>{{ formatTier(m) }}</span>
                   </div>
                 </div>
@@ -260,6 +345,7 @@ const compareUnits = [
 ]
 
 const activeRelicFilter = ref(null)
+const omicronOnly = ref(false)
 
 const myUnits = ref([])
 const oppUnits = ref([])
@@ -270,6 +356,7 @@ async function loadData() {
   myUnits.value = playerStore.getUnitData
   await getGuildStore.loadGuildData(route.params.id)
   oppUnits.value = getGuildStore.getGuildData
+  console.log(oppUnits.value)
   $q.loading.hide()
 }
 function getRelicLevel(member) {
@@ -283,10 +370,36 @@ function getRelicLevel(member) {
 function unitByName(arr, name) {
   return arr.find((u) => u.name === name)
 }
+function getRelicCount(units, unitName, relicLevel) {
+  return units
+    .filter((u) => u.name === unitName)
+    .flatMap((u) => u.members)
+    .filter((m) => (m.relic?.currentTier ?? 0) - 2 === relicLevel).length
+}
+function getMineRelicCount(unit, relicLevel) {
+  return getRelicCount(myUnits.value, unit, relicLevel)
+}
+
+function isBothZero(mine, opp) {
+  return mine === 0 && opp === 0
+}
+
+function getOppRelicCount(unit, relicLevel) {
+  return getRelicCount(oppUnits.value, unit, relicLevel)
+}
+function getRelicPercent(mine, opp) {
+  const total = mine + opp
+  if (total === 0) return 0
+  return (mine / total) * 100
+}
 
 function average(list) {
   if (!list || list.length === 0) return 0
   return list.reduce((acc, m) => acc + getMemberTierValue(m), 0) / list.length
+}
+
+function hasOmicron(member) {
+  return Array.isArray(member.skill) && member.skill.some((s) => s.isOmicron === true)
 }
 
 /* --- GETTER --- */
@@ -459,12 +572,19 @@ const filteredMembers = computed(() => {
 
   let members = [...selectedUnit.value.members]
 
-  // Relic-Filter anwenden
+  // --- RELIC FILTER (wie vorher) ---
   if (memberRelicFilter.value !== null) {
     members = members.filter((m) => getRelicLevel(m) >= memberRelicFilter.value.value)
   }
 
-  // Sortieren
+  // --- OMIKRON FILTER (NEU) ---
+  if (omicronOnly.value) {
+    members = members.filter(
+      (m) => Array.isArray(m.skill) && m.skill.some((s) => s.isOmicron === true),
+    )
+  }
+
+  // --- SORTIEREN (wie vorher) ---
   return members.sort(sortMembers)
 })
 
@@ -679,6 +799,10 @@ onMounted(loadData)
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.bar.neutral {
+  background: linear-gradient(to right, #666, #999);
+  opacity: 0.6;
 }
 
 .bar.red {
