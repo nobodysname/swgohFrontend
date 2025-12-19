@@ -199,11 +199,16 @@
                   class="mb-3"
                 />
 
-                <q-toggle v-model="omicronOnly" color="yellow" label="Only Omicron" class="mb-3" />
+                <q-toggle
+                  v-model="omicronOnly"
+                  color="grey"
+                  label="Only Omicron"
+                  style="color: white"
+                />
 
                 <div class="member-list">
                   <div v-for="m in filteredMembers" :key="m.memberName" class="member-row">
-                    <span
+                    <span style="color: white"
                       >{{ m.memberName }}
                       <q-icon
                         v-if="hasOmicron(m)"
@@ -213,7 +218,7 @@
                         class="q-ml-xs"
                     /></span>
 
-                    <span>{{ formatTier(m) }}</span>
+                    <span style="color: white">{{ formatTier(m) }}</span>
                   </div>
                 </div>
 
@@ -1026,7 +1031,7 @@ onMounted(loadData)
   margin-top: 12px;
   font-size: 0.95rem;
   opacity: 0.85;
-  color: #ffe81f;
+  color: white;
 }
 
 /* Close Button */
