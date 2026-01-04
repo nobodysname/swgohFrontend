@@ -249,6 +249,7 @@ async function deleteRow(rowId) {
 
 .title {
   text-align: center;
+  z-index: 1;
 }
 
 /* =========================

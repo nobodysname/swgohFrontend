@@ -15,6 +15,7 @@ export const useGuildStore = defineStore('Guild', {
   actions: {
     async loadGuildData() {
       try {
+        if (this.guild.length > 0) return
         const response = await api.get('/guilds')
         this.guild = response.data
       } catch (error) {

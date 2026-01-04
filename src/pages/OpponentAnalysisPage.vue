@@ -378,7 +378,6 @@ function getRelicLevel(member) {
   // echtes Relic-Level bestimmen
   return (member.relic?.currentTier ?? 2) - 2
 }
-
 function unitByName(arr, name) {
   return arr.find((u) => u.name === name)
 }
@@ -391,11 +390,9 @@ function getRelicCount(units, unitName, relicLevel) {
 function getMineRelicCount(unit, relicLevel) {
   return getRelicCount(myUnits.value, unit, relicLevel)
 }
-
 function isBothZero(mine, opp) {
   return mine === 0 && opp === 0
 }
-
 function getOppRelicCount(unit, relicLevel) {
   return getRelicCount(oppUnits.value, unit, relicLevel)
 }
@@ -404,12 +401,10 @@ function getRelicPercent(mine, opp) {
   if (total === 0) return 0
   return (mine / total) * 100
 }
-
 function average(list) {
   if (!list || list.length === 0) return 0
   return list.reduce((acc, m) => acc + getMemberTierValue(m), 0) / list.length
 }
-
 function hasOmicron(member) {
   return Array.isArray(member.skill) && member.skill.some((s) => s.isOmicron === true)
 }
