@@ -240,8 +240,9 @@
                         <div
                           v-for="(platoon, pIdx) in op.platoons"
                           :key="platoon.id"
-                          class="platoon-item"
-                          :class="platoon.status === 'FILLED' ? 'status-filled' : 'status-missing'"
+                          class="platoon-item clickable-platoon"
+                          :class="getPlatoonClass(platoon.status)"
+                          @click.stop="openPlatoonDetails(platoon, pIdx, op.planetId, step)"
                         >
                           <span class="p-num">{{ pIdx + 1 }}</span>
                           <q-tooltip
@@ -260,6 +261,7 @@
                             >
                               Missing: {{ platoon.missing.length }} Units
                             </div>
+                            <div class="text-grey-5 text-tiny q-mt-xs">Click for Details</div>
                           </q-tooltip>
                         </div>
                       </div>
@@ -291,6 +293,69 @@
         </div>
       </div>
     </div>
+
+    <q-dialog v-model="showPlatoonDialog">
+      <q-card class="glass-panel platoon-dialog">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-yellow">
+            Operation {{ selectedPlatoon ? selectedPlatoon.index : '' }}
+          </div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup color="white" />
+        </q-card-section>
+
+        <q-card-section v-if="selectedPlatoon">
+          <div class="row justify-between items-center q-mb-md">
+            <q-chip
+              :color="getStatusColor(selectedPlatoon.status)"
+              text-color="black"
+              class="text-bold"
+            >
+              {{ selectedPlatoon.status }}
+            </q-chip>
+            <div class="text-white">
+              <span class="text-grey-4">Points:</span>
+              <span class="text-yellow text-bold q-ml-xs"
+                >+{{ formatNumber(selectedPlatoon.pointsGained) }}</span
+              >
+            </div>
+          </div>
+
+          <div class="units-grid">
+            <div
+              v-for="(unit, idx) in dialogUnitList"
+              :key="idx"
+              class="unit-card"
+              :class="getUnitCardClass(unit)"
+            >
+              <div class="unit-info full-width">
+                <div class="unit-name">{{ unit.name }}</div>
+
+                <div class="row justify-center items-center q-mt-xs" style="font-size: 0.8rem">
+                  <span
+                    :class="unit.missing > 0 ? 'text-red' : 'text-green-accent-3'"
+                    class="text-bold q-mr-xs"
+                    style="color: white"
+                  >
+                    {{ unit.filled }} / {{ unit.amount }}
+                  </span>
+                  <q-icon
+                    :name="unit.missing === 0 ? 'check_circle' : 'warning'"
+                    :color="unit.missing === 0 ? 'green' : 'red'"
+                    size="xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div v-if="dialogUnitList.length === 0" class="col-12 text-center text-grey-5 q-pa-md">
+              No unit requirements found. <br />
+              <span class="text-caption">ID: {{ selectedPlatoon.id }}</span>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -311,8 +376,8 @@ const guildStore = useGuildStore()
 const tbStore = useTBStore()
 
 // --- STATE ---
-const totalGuildGP = ref(400000000) // Default Fallback
-const unusedGP = ref(0) // NEU: Was abgezogen wird
+const totalGuildGP = ref(400000000)
+const unusedGP = ref(0)
 const password = ref('')
 const successRates = ref([1.0, 1.0, 0.95, 0.9, 0.85, 0.8])
 
@@ -324,6 +389,10 @@ const isValidating = ref(false)
 const isSimulating = ref(false)
 const localResult = ref(null)
 
+// NEW: Dialog State
+const showPlatoonDialog = ref(false)
+const selectedPlatoon = ref(null)
+
 // --- COMPUTED ---
 const displayedResult = computed(() => {
   if (adminModeActive.value && localResult.value) {
@@ -332,47 +401,138 @@ const displayedResult = computed(() => {
   return props.analysis
 })
 
-// NEU: Berechnung der Effektiven GP
 const effectiveGP = computed(() => {
   const eff = totalGuildGP.value - unusedGP.value
   return eff > 0 ? eff : 0
 })
 
+// --- NEU: Berechnung der Liste für das Dialog-Fenster ---
+function openPlatoonDetails(platoonData, index, planetId, stepData) {
+  // 1. Planet Definition finden
+  // stepData.activePlanets enthält die Definitionen für diesen Tag
+  const planetDef = stepData.activePlanets?.find((p) => p.id === planetId)
+
+  let definition = null
+
+  if (planetDef && planetDef.reconZones) {
+    // 2. Recon Zones durchsuchen
+    // platoonData.id (z.B. "tb3-platoon-1") muss matchen
+    for (const zone of planetDef.reconZones) {
+      if (zone.platoonDefinition) {
+        const found = zone.platoonDefinition.find((pd) => pd.id === platoonData.id)
+        if (found) {
+          definition = found
+          break
+        }
+      }
+    }
+  }
+
+  selectedPlatoon.value = {
+    ...platoonData, // Status, Missing, ID aus dem Simulations-Ergebnis
+    definition: definition, // Die Requirements (Units) aus dem JSON Path
+    index: index + 1,
+  }
+
+  showPlatoonDialog.value = true
+}
+
+const dialogUnitList = computed(() => {
+  if (!selectedPlatoon.value) return []
+
+  // REQUIREMENTS: Kommen aus der Definition (activePlanets -> platoonDefinition)
+  const reqs = selectedPlatoon.value.definition?.units || []
+
+  // MISSING: Kommen aus dem Simulations-Ergebnis (opsDetails -> missing)
+  // Das Format kann Array von Strings ["Name"] oder Objects [{name, count}] sein.
+  const missingRaw = selectedPlatoon.value.missing || []
+
+  return reqs.map((req) => {
+    // Wir suchen, ob dieser Unit-Name in der Missing-Liste auftaucht
+    let missingCount = 0
+
+    // Check: Ist missingRaw ein Array von Objekten oder Strings?
+    const entry = missingRaw.find((m) => {
+      const mName = typeof m === 'string' ? m : m.name
+      return mName === req.name
+    })
+
+    if (entry) {
+      // Wenn Object mit Count, dann Count nehmen, sonst 1 (bei String-Array zählen wir Vorkommen)
+      if (typeof entry === 'object' && entry.count !== undefined) {
+        missingCount = entry.count
+      } else {
+        // Fallback für String Arrays (z.B. ["Boba", "Boba"])
+        missingCount = missingRaw.filter((m) => m === req.name).length
+      }
+    }
+
+    // Berechnung
+    const filled = Math.max(0, req.amount - missingCount)
+
+    return {
+      name: req.name,
+      amount: req.amount,
+      filled: filled,
+      missing: missingCount,
+      isComplete: missingCount === 0,
+    }
+  })
+})
+
+// --- HELPERS ---
+
+function getPlatoonClass(status) {
+  if (status === 'FILLED') return 'status-filled'
+  if (status === 'PARTIAL') return 'status-partial'
+  return 'status-missing'
+}
+
 // --- SYNC PARAMS ---
 function syncParamsFromAnalysis(data) {
-  // Immer Total GP aus dem Store (Source of Truth) holen, falls verfügbar
   if (
-    guildStore.getGuildData.guild.profile.guildGalacticPower &&
+    guildStore.getGuildData &&
+    guildStore.getGuildData.guild &&
+    guildStore.getGuildData.guild.profile &&
     guildStore.getGuildData.guild.profile.guildGalacticPower > 0
   ) {
     totalGuildGP.value = guildStore.getGuildData.guild.profile.guildGalacticPower
   }
 
-  // Fall 1: Wir haben gespeicherte Params
   if (data && data.simulationParams) {
-    // Wenn in der Simulation eine GP gespeichert war (das ist die EFFEKTIVE GP),
-    // dann berechnen wir rückwärts, wie viel "Unused" war.
     if (data.simulationParams.guildGP) {
       const savedEffective = data.simulationParams.guildGP
-      // Unused ist Differenz zwischen heutigem Total und damals genutztem
-      // (Falls Total sich geändert hat, ist das die sicherste Annäherung)
       unusedGP.value = Math.max(0, totalGuildGP.value - savedEffective)
     }
 
     if (data.simulationParams.successRates && Array.isArray(data.simulationParams.successRates)) {
       successRates.value = [...data.simulationParams.successRates]
     }
-  }
-  // Fall 2: Keine Daten da -> Reset
-  else {
+  } else {
     unusedGP.value = 0
   }
 }
 
+function getUnitCardClass(unit) {
+  // Fall 1: Alles komplett (nichts fehlt) -> Grün
+  if (unit.missing === 0) {
+    return 'unit-filled'
+  }
+
+  // Fall 2: Teilweise gefüllt (z.B. 1 von 2 benötigt sind da) -> Orange
+  if (unit.filled > 0) {
+    return 'unit-partial'
+  }
+
+  // Fall 3: Nichts davon da -> Rot
+  return 'unit-missing'
+}
+
 onMounted(async () => {
-  // Total GP initialisieren
-  await guildStore.loadGuildData()
-  if (guildStore.getGuildData.guild.profile.guildGalacticPower)
+  if (!guildStore.getGuildData?.guild?.profile) {
+    await guildStore.loadGuildData()
+  }
+  if (guildStore.getGuildData?.guild?.profile?.guildGalacticPower)
     totalGuildGP.value = guildStore.getGuildData.guild.profile.guildGalacticPower
   syncParamsFromAnalysis(props.analysis)
 })
@@ -387,12 +547,12 @@ watch(
   () => props.analysis,
   (newVal) => {
     if (!localResult.value) {
+      console.log(props.analysis)
       syncParamsFromAnalysis(newVal)
     }
   },
 )
 
-// --- ACTIONS ---
 function requestAdminAccess() {
   if (isAuthenticated.value) {
     adminModeActive.value = true
@@ -426,7 +586,6 @@ function logout() {
 }
 
 async function triggerSimulation() {
-  // Sicherheitscheck
   if (effectiveGP.value <= 0) {
     $q.notify({
       type: 'warning',
@@ -439,7 +598,7 @@ async function triggerSimulation() {
   isSimulating.value = true
   try {
     const payload = {
-      guildGP: effectiveGP.value, // Wir senden die berechnete GP
+      guildGP: effectiveGP.value,
       strikeZoneSuccessRates: successRates.value,
     }
     const result = await tbStore.runSimulation(payload, password.value)
@@ -462,7 +621,7 @@ function formatNumber(num) {
   )
 }
 function formatGP(num) {
-  return (num / 1000000).toFixed(1) + 'M' // Auf 1 Dezimalstelle für genauere Anzeige
+  return (num / 1000000).toFixed(1) + 'M'
 }
 function getProgressPercent(plan) {
   const currentTP = getTotalPoints(plan)
@@ -479,6 +638,22 @@ function getTotalPoints(plan) {
     plan.cost +
     plan.extraDeployment
   )
+}
+
+function getStatusColor(status) {
+  if (status === 'FILLED') return 'green-accent-3'
+  if (status === 'PARTIAL') return 'orange'
+  return 'red'
+}
+
+// Image Helpers
+function getUnitImage(unitId) {
+  // Basic cleanup to match swgoh.gg format (usually upper case baseId works, but simple check)
+  if (!unitId) return 'https://game-assets.swgoh.gg/tex.planet_icon_unknown.png'
+  return `https://game-assets.swgoh.gg/tex.charui_${unitId.toLowerCase().replace(/[^a-z0-9]/g, '')}.png`
+}
+function handleImgError(e) {
+  e.target.src = 'https://game-assets.swgoh.gg/tex.planet_icon_unknown.png'
 }
 </script>
 
@@ -838,9 +1013,14 @@ function getTotalPoints(plan) {
   color: #888;
 }
 
+.clickable-platoon {
+  cursor: pointer !important;
+}
+
 .platoon-item:hover {
   transform: scale(1.1);
   z-index: 2;
+  box-shadow: 0 0 8px rgba(255, 232, 31, 0.4);
 }
 
 /* Colors for Status */
@@ -851,9 +1031,72 @@ function getTotalPoints(plan) {
   box-shadow: 0 0 8px rgba(105, 240, 174, 0.3);
 }
 
+.status-partial {
+  background: rgba(255, 152, 0, 0.25);
+  border-color: #ffb74d;
+  color: #ffb74d;
+  box-shadow: 0 0 8px rgba(255, 183, 77, 0.2);
+}
+
 .status-missing {
   background: rgba(211, 47, 47, 0.25);
   border-color: #ff5252;
   color: #ff5252;
+}
+
+/* PLATOON DIALOG STYLES */
+.platoon-dialog {
+  width: 600px;
+  max-width: 90vw;
+}
+
+.units-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.unit-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.unit-filled {
+  border-color: #69f0ae;
+  background: rgba(0, 200, 83, 0.1);
+}
+
+.unit-missing {
+  border-color: #ff5252;
+  background: rgba(211, 47, 47, 0.1);
+  opacity: 0.8;
+}
+
+.unit-avatar {
+  margin-bottom: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.unit-name {
+  font-size: 0.75rem;
+  font-weight: bold;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  height: 2.4em; /* ca. 2 Zeilen */
+  overflow: hidden;
+  color: #eee;
+}
+
+.unit-status {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 </style>
