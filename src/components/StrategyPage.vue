@@ -645,16 +645,6 @@ function getStatusColor(status) {
   if (status === 'PARTIAL') return 'orange'
   return 'red'
 }
-
-// Image Helpers
-function getUnitImage(unitId) {
-  // Basic cleanup to match swgoh.gg format (usually upper case baseId works, but simple check)
-  if (!unitId) return 'https://game-assets.swgoh.gg/tex.planet_icon_unknown.png'
-  return `https://game-assets.swgoh.gg/tex.charui_${unitId.toLowerCase().replace(/[^a-z0-9]/g, '')}.png`
-}
-function handleImgError(e) {
-  e.target.src = 'https://game-assets.swgoh.gg/tex.planet_icon_unknown.png'
-}
 </script>
 
 <style scoped lang="scss">

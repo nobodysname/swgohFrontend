@@ -5,7 +5,6 @@
         <q-tabs v-model="tab" dense class="analysis-tabs" align="center">
           <q-tab name="strategy" label="Strategy Overview" />
           <q-tab name="platoon" label="Platoon Analysis" />
-          <q-tab name="strike" label="Strike Zones" />
         </q-tabs>
       </div>
 
@@ -22,10 +21,6 @@
           </div>
 
           <PlatoonAnalysis v-else :analysis="analysis" />
-        </q-tab-panel>
-
-        <q-tab-panel name="strike">
-          <div class="comparison-section placeholder">Strike Zone Teams coming next</div>
         </q-tab-panel>
       </q-tab-panels>
     </div>
