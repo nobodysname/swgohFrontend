@@ -140,7 +140,6 @@
               class="q-mr-sm"
               @click="requestAdminAccess"
             />
-            <q-btn flat round icon="close" color="white" @click="$emit('close')" />
           </div>
         </div>
 
