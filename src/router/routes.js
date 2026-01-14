@@ -12,6 +12,7 @@ const routes = [
         component: () => import('pages/OpponentAnalysisPage.vue'),
       },
       { path: '/strategy', component: () => import('src/pages/StrategyPage.vue') },
+      { path: '/counter', component: () => import('src/pages/CounterPage.vue') },
     ],
   },
 

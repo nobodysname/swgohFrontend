@@ -5,6 +5,7 @@ export const usePlayerStore = defineStore('Player', {
   state: () => ({
     player: [],
     units: [],
+    names: [],
   }),
 
   getters: {
@@ -13,6 +14,9 @@ export const usePlayerStore = defineStore('Player', {
     },
     getUnitData: (state) => {
       return state.units
+    },
+    getUnitNames: (state) => {
+      return state.names
     },
   },
 
@@ -31,6 +35,15 @@ export const usePlayerStore = defineStore('Player', {
         if (this.units.length > 0) return
         const response = await api.get('/units')
         this.units = response.data
+      } catch (error) {
+        console.error(error.message)
+      }
+    },
+    async loadAllUnitNames() {
+      try {
+        if (this.names.length > 0) return
+        const response = await api.get('/unitNames')
+        this.names = response.data
       } catch (error) {
         console.error(error.message)
       }
