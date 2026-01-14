@@ -3,7 +3,7 @@
     <q-header elevated class="header-custom text-white" height-hint="98">
       <q-toolbar class="toolbar-custom">
         <q-toolbar-title class="row items-center no-wrap">
-          <q-avatar size="48px" class="q-mr-md logo-avatar">
+          <q-avatar size="40px" class="q-mr-md logo-avatar">
             <img src="/icons/ginwalkers.png" />
           </q-avatar>
           <span class="text-h5 text-weight-bold tracking-wide">The Ginwalkers</span>
@@ -46,7 +46,7 @@
 
 .toolbar-custom {
   padding: 0 24px;
-  min-height: 70px;
+  min-height: 50px;
 }
 
 .logo-avatar {

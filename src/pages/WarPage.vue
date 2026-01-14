@@ -1,18 +1,11 @@
 <template>
   <q-page class="page-container">
     <div class="content-wrapper">
-      <div class="header-section text-center q-mb-lg">
-        <h1 class="text-h4 text-uppercase text-weight-bold glow-text q-my-none">
-          <q-icon name="groups" color="accent" class="q-mr-sm" />
-          Guild Intelligence
-        </h1>
-        <div class="text-caption text-grey-4">Unit Roster & Analysis</div>
-      </div>
-
       <div
         class="glass-card filter-bar row items-center justify-between q-col-gutter-md q-px-lg q-py-md q-mb-lg"
+        style="margin-top: 15px"
       >
-        <div class="col-12 col-sm-6 text-center">
+        <div class="col-12 col-sm-6 text-center" style="margin-top: -15px">
           <q-btn
             icon="travel_explore"
             label="Opponent Analysis"
@@ -22,7 +15,7 @@
             @click="goToOpponent"
           />
         </div>
-        <div class="col-12 col-sm-6 text-center">
+        <div class="col-12 col-sm-6 text-center" style="margin-top: -15px">
           <q-btn
             icon="search"
             label="Search Global Unit"

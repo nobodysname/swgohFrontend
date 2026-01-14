@@ -1,14 +1,6 @@
 <template>
   <q-page class="page-container">
     <div class="content-wrapper">
-      <div class="header-section text-center q-mb-lg">
-        <h1 class="text-h4 text-uppercase text-weight-bold glow-text q-my-none">
-          <q-icon name="psychology" color="accent" class="q-mr-sm" />
-          Counter Overview
-        </h1>
-        <div class="text-caption text-grey-4">Team Recommendations</div>
-      </div>
-
       <q-dialog v-model="passwordDialog" transition-show="scale" transition-hide="scale">
         <q-card class="glass-card password-card">
           <div class="text-center q-mb-md">

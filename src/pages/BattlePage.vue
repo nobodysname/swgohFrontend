@@ -1,15 +1,7 @@
 <template>
   <q-page class="page-container">
     <div class="content-wrapper">
-      <div class="header-section text-center q-mb-lg">
-        <h1 class="text-h4 text-uppercase text-weight-bold glow-text q-my-none">
-          <q-icon name="analytics" color="accent" class="q-mr-sm" />
-          Territory Battles
-        </h1>
-        <div class="text-caption text-grey-4">Strategy & Platoon Assignment</div>
-      </div>
-
-      <div class="glass-card filter-bar q-mb-lg">
+      <div class="glass-card filter-bar q-mb-lg" style="margin-top: 15px">
         <q-tabs
           v-model="tab"
           dense
