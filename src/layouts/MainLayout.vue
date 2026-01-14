@@ -15,6 +15,7 @@
         <q-route-tab to="/war" label="Territory War" />
         <q-route-tab to="/battle" label="Territory Battle" />
         <q-route-tab to="/counter" label="Counter" />
+        <q-route-tab to="/strategy" label="Strategy" />
       </q-tabs>
     </q-header>
 

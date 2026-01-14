@@ -57,7 +57,7 @@
 
           <div class="map-layout custom-scroll">
             <div class="map-group">
-              <div class="group-label">Space</div>
+              <div class="group-label">Fleets</div>
               <div class="zone-row centered-row">
                 <div
                   v-for="zone in ['F1', 'F2']"
@@ -274,7 +274,6 @@ async function loadStrategy() {
 
 function closePasswordDialog() {
   router.back()
-  setTimeout(() => router.push('/'), 100)
 }
 
 async function saveRow(row) {
@@ -474,7 +473,7 @@ async function deleteRow(rowId) {
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  min-width: 50px; /* Mindestbreite */
+  min-width: 60px; /* Mindestbreite */
   user-select: none;
 
   &:hover {

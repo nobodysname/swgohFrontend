@@ -1,22 +1,22 @@
 <template>
-  <div class="priority-section">
-    <div class="header-row">
-      <div>
-        <h2 class="subtitle">Priority Farming List</h2>
-      </div>
+  <div class="priority-section column full-height">
+    <div
+      class="header-row row justify-between items-end q-mb-md q-pb-sm border-bottom-accent wrap q-gutter-y-sm"
+    >
+      <div class="col-12 col-sm-auto"></div>
 
-      <div class="controls">
+      <div class="controls col-12 col-sm-auto row q-gutter-md no-wrap-sm wrap">
         <q-input
           v-model="search"
           dense
           filled
           dark
           label="Search unit..."
-          class="search-input"
-          color="yellow"
+          class="search-input high-contrast-input col-12 col-sm-auto"
+          color="accent"
         >
           <template v-slot:append>
-            <q-icon name="search" color="yellow" />
+            <q-icon name="search" color="accent" />
           </template>
         </q-input>
 
@@ -27,79 +27,100 @@
           dark
           :options="phaseOptions"
           label="Phase Filter"
-          class="filter-select"
+          class="filter-select high-contrast-input col-12 col-sm-auto"
           emit-value
           map-options
-          color="yellow"
+          color="accent"
           clearable
+          options-dense
         />
       </div>
     </div>
 
-    <q-table
-      class="prio-table"
-      flat
-      dark
-      :rows="filteredRows"
-      :columns="columns"
-      row-key="id"
-      :pagination="{ rowsPerPage: 15 }"
-      :rows-per-page-options="[15, 30, 50, 0]"
-      virtual-scroll
-    >
-      <template v-slot:header="props">
-        <q-tr :props="props">
-          <q-th v-for="col in props.cols" :key="col.name" :props="props" class="custom-head">
-            {{ col.label }}
-          </q-th>
-        </q-tr>
-      </template>
+    <div class="table-container col custom-scroll">
+      <q-table
+        class="prio-table sticky-header-table"
+        flat
+        dark
+        :rows="filteredRows"
+        :columns="columns"
+        row-key="id"
+        :pagination="{ rowsPerPage: 15 }"
+        :rows-per-page-options="[15, 30, 50, 0]"
+        virtual-scroll
+        :virtual-scroll-item-size="48"
+        :virtual-scroll-sticky-size-start="48"
+        :visible-columns="
+          $q.screen.lt.sm
+            ? ['unit', 'count', 'score']
+            : ['phase', 'unit', 'count', 'locations', 'score']
+        "
+      >
+        <template v-slot:header="props">
+          <q-tr :props="props" class="header-row-bg text-uppercase text-grey-4">
+            <q-th v-for="col in props.cols" :key="col.name" :props="props" class="text-weight-bold">
+              {{ col.label }}
+            </q-th>
+          </q-tr>
+        </template>
 
-      <template #body-cell-unit="props">
-        <q-td :props="props">
-          <div class="unit-wrapper">
-            <span class="unit-name">{{ props.row.name }}</span>
-            <q-badge :class="getRelicClass(props.row.relic)" class="relic-badge" rounded>
-              R{{ props.row.relic }}
-            </q-badge>
-          </div>
-        </q-td>
-      </template>
+        <template #body-cell-unit="props">
+          <q-td :props="props">
+            <div class="row items-center q-gutter-x-sm no-wrap">
+              <span
+                class="text-white text-weight-bold ellipsis"
+                style="font-size: 1.05rem; max-width: 200px"
+                >{{ props.row.name }}</span
+              >
+              <q-badge :class="getRelicClass(props.row.relic)" class="relic-badge shadow-1" rounded>
+                R{{ props.row.relic }}
+              </q-badge>
+            </div>
+            <div v-if="$q.screen.lt.sm" class="text-caption text-grey-5 ellipsis">
+              {{ props.row.locations.join(', ') }}
+            </div>
+          </q-td>
+        </template>
 
-      <template #body-cell-count="props">
-        <q-td :props="props">
-          <div class="count-badge">{{ props.row.count }}x</div>
-        </q-td>
-      </template>
+        <template #body-cell-count="props">
+          <q-td :props="props">
+            <div class="count-badge text-weight-bold">{{ props.row.count }}x</div>
+          </q-td>
+        </template>
 
-      <template #body-cell-locations="props">
-        <q-td :props="props" class="loc-cell">
-          <div class="loc-wrapper">
-            <q-badge
-              v-for="(loc, i) in props.row.locations"
-              :key="i"
-              text-color="yellow"
-              outline
-              dark
-              class="loc-badge"
-            >
-              {{ loc }}
-            </q-badge>
-          </div>
-        </q-td>
-      </template>
+        <template #body-cell-locations="props">
+          <q-td :props="props" class="loc-cell">
+            <div class="loc-wrapper">
+              <q-badge
+                v-for="(loc, i) in props.row.locations"
+                :key="i"
+                color="grey-9"
+                text-color="white"
+                class="loc-badge border-grey"
+              >
+                {{ loc }}
+              </q-badge>
+            </div>
+          </q-td>
+        </template>
 
-      <template #body-cell-score="props">
-        <q-td :props="props">
-          <span class="score-val">{{ formatNumber(props.row.score) }}</span>
-        </q-td>
-      </template>
-    </q-table>
+        <template #body-cell-score="props">
+          <q-td :props="props">
+            <span class="score-val text-accent text-weight-bold">{{
+              formatNumber(props.row.score)
+            }}</span>
+          </q-td>
+        </template>
+      </q-table>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useQuasar } from 'quasar'
+
+const $q = useQuasar()
 
 const props = defineProps({
   analysis: { type: Object, required: true },
@@ -108,9 +129,8 @@ const props = defineProps({
 const search = ref('')
 const phaseFilter = ref(null)
 
-// 1. Flatten Data: Wandelt die Phasen-Struktur in eine flache Tabellen-Liste um
+// 1. Flatten Data
 const flatPriorityList = computed(() => {
-  // Erwarte Struktur: analysis.priorityList = [{ phase: 1, units: [...] }, ...]
   const groupedList = props.analysis.priorityList || []
   const rows = []
 
@@ -124,7 +144,7 @@ const flatPriorityList = computed(() => {
           relic: u.relic,
           count: u.totalCount,
           score: u.score,
-          locations: u.locations || [], // Array von Strings
+          locations: u.locations || [],
         })
       })
     }
@@ -138,21 +158,17 @@ const filteredRows = computed(() => {
   const q = search.value.trim().toLowerCase()
 
   return flatPriorityList.value.filter((row) => {
-    // Phase Filter
     if (phaseFilter.value && row.phase !== phaseFilter.value) return false
-
-    // Search Filter
     if (q) {
       const inName = row.name.toLowerCase().includes(q)
       const inLoc = row.locations.some((l) => l.toLowerCase().includes(q))
       if (!inName && !inLoc) return false
     }
-
     return true
   })
 })
 
-// 3. Columns Definition
+// 3. Columns
 const columns = [
   {
     name: 'phase',
@@ -160,7 +176,7 @@ const columns = [
     field: 'phase',
     sortable: true,
     align: 'center',
-    style: 'width: 80px; font-weight: bold; color: #ffe81f;',
+    style: 'width: 60px; font-weight: bold; color: #fff;',
   },
   {
     name: 'unit',
@@ -168,33 +184,36 @@ const columns = [
     field: 'name',
     sortable: true,
     align: 'left',
+    style: 'min-width: 150px; max-width: 300px; white-space: normal;', // Umbruch erlauben
   },
   {
     name: 'count',
-    label: 'Missing Qty',
+    label: 'Qty', // Kürzeres Label für Mobile
     field: 'count',
     sortable: true,
     align: 'center',
+    style: 'width: 50px;',
   },
   {
     name: 'locations',
     label: 'Required At',
     field: 'locations',
     align: 'left',
+    style: 'min-width: 200px; white-space: normal;', // Umbruch der Badges erlauben
   },
   {
     name: 'score',
-    label: 'Priority Score',
+    label: 'Score', // Kürzer
     field: 'score',
     sortable: true,
     align: 'right',
     sort: (a, b) => parseInt(a) - parseInt(b),
+    style: 'width: 100px;',
   },
 ]
 
-// 4. Options for Select
+// 4. Options
 const phaseOptions = computed(() => {
-  // Extrahiere verfügbare Phasen aus den Daten
   const phases = new Set(flatPriorityList.value.map((r) => r.phase))
   const opts = Array.from(phases)
     .sort()
@@ -205,7 +224,9 @@ const phaseOptions = computed(() => {
 // Helpers
 function formatNumber(val) {
   if (!val) return 0
-  return new Intl.NumberFormat('en-US').format(val)
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(
+    val,
+  )
 }
 
 function getRelicClass(tier) {
@@ -216,137 +237,152 @@ function getRelicClass(tier) {
 </script>
 
 <style scoped lang="scss">
-.priority-section {
-  padding: 10px;
+/* --- FONTS --- */
+.font-jedi {
+  margin-top: -5px;
+  font-family: 'Star Jedi', sans-serif;
+  letter-spacing: 1px;
+}
+
+/* --- COLORS & BORDERS --- */
+.border-bottom-accent {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.border-grey {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.bg-dark-transparent {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* --- INPUTS --- */
+.high-contrast-input {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 4px;
+}
+.high-contrast-input :deep(.q-field__native),
+.high-contrast-input :deep(.q-field__label),
+.high-contrast-input :deep(.q-icon) {
+  color: #ffffff !important;
+}
+
+/* Responsive Input Widths */
+.search-input,
+.filter-select {
+  width: 200px;
+}
+@media (max-width: 600px) {
+  .search-input,
+  .filter-select {
+    width: 100%; /* Volle Breite auf Handy */
+  }
+}
+
+/* --- TABLE --- */
+.table-container {
+  overflow: hidden;
+}
+
+.prio-table {
+  background: rgba(15, 15, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   height: 100%;
+
   display: flex;
   flex-direction: column;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 232, 31, 0.2);
-  padding-bottom: 15px;
+.prio-table :deep(.q-table__middle) {
+  flex: 1;
+  overflow: auto;
 }
 
-.subtitle {
-  font-family: 'Star Jedi', sans-serif;
-  font-size: 1.8rem;
-  margin: 0;
-  color: #ffe81f;
-  text-shadow: 0 0 10px rgba(255, 232, 31, 0.3);
+/* Header Styling */
+.header-row-bg {
+  background: #1a1a1f !important;
 }
 
-.subtitle-desc {
-  font-size: 0.9rem;
-  opacity: 0.7;
-  margin-top: 4px;
+.prio-table :deep(thead tr th) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #1a1a1f !important;
+  color: #eee;
 }
 
-.controls {
-  display: flex;
-  gap: 12px;
-}
-
-.search-input,
-.filter-select {
-  width: 220px;
-}
-
-/* TABLE STYLING */
-.prio-table {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 232, 31, 0.15);
-  border-radius: 12px;
-  backdrop-filter: blur(8px);
-  flex-grow: 1; /* Füllt den Rest der Höhe */
-}
-
-/* Custom Header */
-.custom-head {
-  font-size: 1rem !important;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.9;
-}
-
-/* Unit Cell */
-.unit-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.unit-name {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-/* Relic Badges */
+/* --- CELL ELEMENTS --- */
 .relic-badge {
   font-size: 0.75rem;
-  padding: 4px 8px;
+  padding: 2px 6px;
   font-weight: 800;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
 }
 
 .relic-base {
   background: rgba(255, 255, 255, 0.1);
   color: #ddd;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 .relic-gold {
-  background: rgba(255, 165, 0, 0.2);
+  background: rgba(255, 165, 0, 0.15);
   border-color: rgba(255, 165, 0, 0.5);
   color: #ffca28;
-  box-shadow: 0 0 8px rgba(255, 165, 0, 0.2);
 }
 .relic-red {
-  background: rgba(255, 50, 50, 0.25);
+  background: rgba(255, 50, 50, 0.15);
   border-color: rgba(255, 50, 50, 0.6);
   color: #ff8a80;
-  box-shadow: 0 0 10px rgba(255, 50, 50, 0.3);
 }
 
-/* Count Badge */
 .count-badge {
   display: inline-block;
-  background: rgba(255, 232, 31, 0.15);
-  color: #ffe81f;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 232, 31, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Locations */
 .loc-wrapper {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 .loc-badge {
-  font-size: 0.8rem;
-  opacity: 0.9;
+  font-size: 0.75rem;
+  padding: 2px 6px;
 }
 
-/* Score */
 .score-val {
   font-family: monospace;
   font-size: 1.1rem;
-  opacity: 0.8;
+  font-weight: bold;
 }
 
-/* Override Quasar Defaults */
-:deep(.q-table__top),
-:deep(.q-table__bottom),
-:deep(thead tr:first-child th) {
-  background: rgba(0, 0, 0, 0.6) !important;
+/* Override Quasar Table Colors */
+:deep(.q-table__bottom) {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ccc;
 }
-
 :deep(tbody tr:hover) {
-  background: rgba(255, 232, 31, 0.08) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* SCROLLBAR */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--q-accent);
 }
 </style>

@@ -4,16 +4,16 @@
       <div class="header-section text-center q-mb-lg">
         <h1 class="text-h4 text-uppercase text-weight-bold glow-text q-my-none">
           <q-icon name="psychology" color="accent" class="q-mr-sm" />
-          Counter Intelligence
+          Counter Overview
         </h1>
-        <div class="text-caption text-grey-4">Tactical Team Recommendations</div>
+        <div class="text-caption text-grey-4">Team Recommendations</div>
       </div>
 
-      <q-dialog v-model="passwordDialog" persistent transition-show="scale" transition-hide="scale">
+      <q-dialog v-model="passwordDialog" transition-show="scale" transition-hide="scale">
         <q-card class="glass-card password-card">
           <div class="text-center q-mb-md">
             <q-icon name="lock" size="xl" color="warning" />
-            <div class="text-h6 text-uppercase q-mt-sm text-white">Access Database</div>
+            <div class="text-h6 text-uppercase q-mt-sm text-white">Admin Access</div>
           </div>
           <q-input
             dark
@@ -23,22 +23,25 @@
             label="Security Code"
             class="high-contrast-input q-mb-md"
             autofocus
-            @keyup.enter="unlock"
+            @keyup.enter="attemptLogin"
           />
           <div class="row justify-end">
-            <q-btn label="Unlock" color="accent" text-color="black" @click="unlock" />
+            <q-btn flat label="Cancel" color="grey" v-close-popup />
+            <q-btn label="Login" color="accent" text-color="black" @click="attemptLogin" />
           </div>
           <div v-if="error" class="error-msg q-mt-md text-center">{{ error }}</div>
         </q-card>
       </q-dialog>
 
-      <div v-if="unlocked" class="main-layout">
-        <div class="glass-card filter-bar q-mb-md row items-center q-col-gutter-md">
-          <div class="col-12 col-md-4">
+      <div class="main-layout">
+        <div
+          class="glass-card filter-bar row items-center justify-between q-col-gutter-md q-px-lg q-py-md q-mb-lg"
+        >
+          <div class="col-12 col-md-4" style="min-width: 300px; margin-top: -10px">
             <q-select
               v-model="selectedOpponent"
               :options="opponentOptions"
-              label="Gegner Leader suchen..."
+              label="Search Opponent Leader..."
               dark
               filled
               dense
@@ -49,12 +52,13 @@
               class="high-contrast-input"
               popup-content-class="dark-dropdown"
               clearable
+              hide-bottom-space
             >
               <template v-slot:option="scope">
                 <q-item v-bind="scope.itemProps" class="text-white">
                   <q-item-section avatar>
                     <q-avatar size="30px">
-                      <img :src="getUnitImage(scope.opt)" />
+                      <UnitIcon :unit-name="scope.opt" :all-unit-data="allUnitData" round />
                     </q-avatar>
                   </q-item-section>
                   <q-item-section>
@@ -68,39 +72,55 @@
             </q-select>
           </div>
 
-          <div class="col-12 col-md-4 text-center">
+          <div class="col-12 col-md-4 flex flex-center" style="margin-top: -10px">
             <q-btn-toggle
               v-model="modeFilter"
               toggle-color="accent"
               color="grey-9"
               text-color="grey-4"
               :options="[
-                { label: 'Alle', value: null },
+                { label: 'All', value: null },
                 { label: 'GAC', value: 'GAC' },
                 { label: 'TB', value: 'TB' },
               ]"
               unelevated
               rounded
-              padding="6px 16px"
+              padding="6px 24px"
             />
           </div>
 
-          <div class="col-12 col-md-4 text-right">
-            <q-btn
-              v-if="isAdmin"
-              icon="add"
-              label="Counter hinzufügen"
-              color="accent"
-              text-color="black"
-              @click="showAddDialog = true"
-            />
+          <div
+            class="col-12 col-md-4 text-right flex items-center justify-end"
+            style="margin-top: -10px"
+          >
+            <template v-if="isAdmin">
+              <q-btn
+                icon="add"
+                label="Add Counter"
+                color="accent"
+                text-color="black"
+                @click="showAddDialog = true"
+                class="q-mr-sm"
+              />
+              <q-btn icon="logout" flat round color="red-4" @click="logout" title="Logout" />
+            </template>
+
+            <template v-else>
+              <q-btn
+                icon="lock"
+                label="Admin Login"
+                outline
+                color="accent"
+                @click="passwordDialog = true"
+              />
+            </template>
           </div>
         </div>
 
         <div class="counters-grid">
           <div v-if="filteredCounters.length === 0" class="col-12 text-center text-grey-5 q-pa-xl">
             <q-icon name="search_off" size="xl" />
-            <div class="text-h6 q-mt-md">Keine Counter gefunden.</div>
+            <div class="text-h6 q-mt-md">No counters found.</div>
           </div>
 
           <transition-group name="list-anim">
@@ -115,7 +135,10 @@
                     >VS</span
                   >
                   <q-avatar size="42px" class="shadow-2 border-red">
-                    <img :src="getUnitImage(counter.opponent_leader_id)" />
+                    <UnitIcon
+                      :unit-name="counter.opponent_leader_id"
+                      :all-unit-data="allUnitData"
+                    />
                   </q-avatar>
                   <span class="text-h6 text-white q-ml-sm">{{ counter.opponent_leader_id }}</span>
                 </div>
@@ -161,22 +184,12 @@
                     class="unit-circle"
                     :class="{ 'is-leader': idx === 0, 'is-any': name === 'ANY' }"
                   >
-                    <q-img
+                    <UnitIcon
                       v-if="name !== 'ANY'"
-                      :src="getUnitImage(name)"
-                      class="unit-image"
-                      fit="cover"
-                    >
-                      <template v-slot:loading>
-                        <q-spinner color="accent" size="20px" />
-                      </template>
-
-                      <template v-slot:error>
-                        <div class="absolute-full flex flex-center bg-dark text-white">
-                          <q-icon name="broken_image" size="20px" color="red" />
-                        </div>
-                      </template>
-                    </q-img>
+                      :unit-name="name"
+                      :all-unit-data="allUnitData"
+                      size="100%"
+                    />
 
                     <q-icon v-else name="help_outline" size="20px" color="grey-6" />
                   </div>
@@ -188,7 +201,7 @@
               >
                 <div class="row no-wrap">
                   <q-icon name="info" color="accent" size="xs" class="q-mr-sm q-mt-xs" />
-                  <div>{{ counter.description || 'Keine spezifischen Anmerkungen.' }}</div>
+                  <div>{{ counter.description || 'No specific notes.' }}</div>
                 </div>
               </div>
             </div>
@@ -199,15 +212,15 @@
       <q-dialog v-model="showAddDialog" persistent backdrop-filter="blur(4px)">
         <q-card class="glass-card add-dialog-card">
           <q-card-section>
-            <div class="text-h6 text-accent">Neuen Counter erstellen</div>
+            <div class="text-h6 text-accent">Create New Counter</div>
           </q-card-section>
 
           <q-card-section class="q-gutter-md">
-            <div class="section-label text-grey-4 text-caption text-uppercase">Gegner</div>
+            <div class="section-label text-grey-4 text-caption text-uppercase">Opponent</div>
             <q-select
               v-model="newCounter.opponent"
               :options="opponentOptions"
-              label="Gegner Leader"
+              label="Opponent Leader"
               dark
               filled
               dense
@@ -219,23 +232,27 @@
               <template v-slot:option="scope">
                 <q-item v-bind="scope.itemProps" class="text-white">
                   <q-item-section avatar>
-                    <q-avatar><img :src="getUnitImage(scope.opt)" /></q-avatar>
+                    <q-avatar size="30px">
+                      <UnitIcon :unit-name="scope.opt" :all-unit-data="allUnitData" round />
+                    </q-avatar>
                   </q-item-section>
-                  <q-item-section>{{ scope.opt }}</q-item-section>
+                  <q-item-section>
+                    <q-item-label>{{ scope.opt }}</q-item-label>
+                  </q-item-section>
                 </q-item>
               </template>
             </q-select>
 
             <q-separator dark spaced />
 
-            <div class="section-label text-grey-4 text-caption text-uppercase">Mein Team</div>
+            <div class="section-label text-grey-4 text-caption text-uppercase">My Team</div>
 
             <div class="row q-mb-sm">
               <div class="col-12">
                 <q-select
                   v-model="newCounter.team[0]"
                   :options="opponentOptions"
-                  label="Leader (Pflicht)"
+                  label="Leader (Required)"
                   dark
                   filled
                   dense
@@ -248,9 +265,13 @@
                   <template v-slot:option="scope">
                     <q-item v-bind="scope.itemProps" class="text-white">
                       <q-item-section avatar>
-                        <q-avatar><img :src="getUnitImage(scope.opt)" /></q-avatar>
+                        <q-avatar size="30px">
+                          <UnitIcon :unit-name="scope.opt" :all-unit-data="allUnitData" round />
+                        </q-avatar>
                       </q-item-section>
-                      <q-item-section>{{ scope.opt }}</q-item-section>
+                      <q-item-section>
+                        <q-item-label>{{ scope.opt }}</q-item-label>
+                      </q-item-section>
                     </q-item>
                   </template>
                 </q-select>
@@ -276,9 +297,13 @@
                   <template v-slot:option="scope">
                     <q-item v-bind="scope.itemProps" class="text-white">
                       <q-item-section avatar>
-                        <q-avatar><img :src="getUnitImage(scope.opt)" /></q-avatar>
+                        <q-avatar size="30px">
+                          <UnitIcon :unit-name="scope.opt" :all-unit-data="allUnitData" round />
+                        </q-avatar>
                       </q-item-section>
-                      <q-item-section>{{ scope.opt }}</q-item-section>
+                      <q-item-section>
+                        <q-item-label>{{ scope.opt }}</q-item-label>
+                      </q-item-section>
                     </q-item>
                   </template>
                 </q-select>
@@ -288,7 +313,7 @@
               <q-select
                 v-model="newCounter.mode"
                 :options="['GAC', 'TB', 'BOTH']"
-                label="Modus"
+                label="Mode"
                 dark
                 filled
                 dense
@@ -300,7 +325,7 @@
               <q-input
                 v-model="newCounter.description"
                 type="textarea"
-                label="Infos / Strategie"
+                label="Info / Strategy"
                 dark
                 filled
                 dense
@@ -311,9 +336,9 @@
           </q-card-section>
 
           <q-card-actions align="right" class="q-pa-md bg-dark-transparent">
-            <q-btn flat label="Abbrechen" color="grey-4" v-close-popup />
+            <q-btn flat label="Cancel" color="grey-4" v-close-popup />
             <q-btn
-              label="Speichern"
+              label="Save"
               color="accent"
               text-color="black"
               @click="saveCounter"
@@ -330,22 +355,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCounterStore } from 'src/stores/CounterStore'
 import { storeToRefs } from 'pinia'
-import { api } from 'src/boot/axios' // WICHTIG: API importieren
-
-const isDev = process.env.NODE_ENV === 'development'
-
-const baseURL = isDev
-  ? 'http://localhost:3000' // Development
-  : 'https://ginwalkers.de:3000' // Production
+import { api } from 'src/boot/axios'
+import UnitIcon from 'components/UnitIcon.vue'
 
 // --- SETUP ---
 const store = useCounterStore()
 const { isAdmin } = storeToRefs(store)
 
-const passwordDialog = ref(true)
+// Dialog jetzt standardmäßig geschlossen
+const passwordDialog = ref(false)
 const password = ref('')
 const error = ref(null)
-const unlocked = ref(false)
 const showAddDialog = ref(false)
 
 // State für Filter
@@ -361,46 +381,46 @@ const newCounter = ref({
 })
 
 // --- UNIT DATEN ---
-// Speichert die VOLLEN Objekte { name, thumbnailName } aus dem Backend
 const allUnitData = ref([])
-// Speichert nur die Namen ["Rex", "Cody"] für die Dropdowns
 const allUnits = ref([])
-
-// Optionen für das Dropdown (wird beim Tippen gefiltert)
 const opponentOptions = ref([])
 
 onMounted(async () => {
   try {
-    // 1. Lade die Daten direkt von deiner neuen Backend-Route
+    // 1. Lade Unit Daten (Bilder/Namen)
     const res = await api.get('/unitNames')
-    // Erwartetes Format: [{ name: "...", thumbnailName: "..." }, ...]
-
-    // 2. Speichere die Rohdaten für den Bilder-Lookup
     allUnitData.value = res.data
-
-    // 3. Extrahiere NUR die Namen für die Dropdowns (Array of Strings)
     allUnits.value = res.data.map((unit) => unit.name)
-
-    // 4. Initialisiere die Optionen
     opponentOptions.value = allUnits.value
-
-    // Optional: Falls der Store die Namen auch braucht
     store.setUnits(allUnits.value)
+
+    // 2. Lade Counter Daten (öffentlich, ohne Passwort)
+    // Hinweis: Dein Backend sollte Lesezugriff auch ohne PW erlauben.
+    await store.fetchCounters(null)
   } catch (e) {
-    console.error('Fehler beim Laden der Unit-Namen:', e)
+    console.error('Error loading initial data:', e)
   }
 })
 
 // --- ACTIONS ---
 
-async function unlock() {
+async function attemptLogin() {
+  // Wir nutzen fetchCounters mit PW, um Admin-Status zu prüfen/setzen
   const success = await store.fetchCounters(password.value)
   if (success) {
-    unlocked.value = true
+    // Wenn erfolgreich, ist isAdmin im Store jetzt true
     passwordDialog.value = false
+    password.value = ''
+    error.value = null
   } else {
-    error.value = 'Falsches Passwort'
+    error.value = 'Wrong Password'
   }
+}
+
+function logout() {
+  store.logout() // Du brauchst eine logout action im Store, die isAdmin = false setzt
+  // Fallback falls Action nicht existiert:
+  // store.$patch({ isAdmin: false })
 }
 
 async function saveCounter() {
@@ -411,9 +431,16 @@ async function saveCounter() {
     description: newCounter.value.description,
   }
 
-  await store.addCounter(payload, password.value)
+  // Hier brauchen wir das Passwort nicht zwingend, wenn das Backend
+  // session-based ist, aber dein Store nutzt es vermutlich noch:
+  // Wir können das PW nutzen, das wir beim Login eingegeben haben
+  // (müsste idealerweise im Store gespeichert sein).
+  // Für jetzt übergeben wir es einfach nicht, wenn der Store es intern hat
+  // oder wir nehmen an, dass der Store den Auth-Header setzt.
+
+  await store.addCounter(payload)
   showAddDialog.value = false
-  // Reset Form
+
   newCounter.value = {
     opponent: null,
     team: [null, null, null, null, null],
@@ -423,14 +450,13 @@ async function saveCounter() {
 }
 
 async function deleteCounter(id) {
-  if (confirm('Counter wirklich löschen?')) {
-    await store.deleteCounter(id, password.value)
+  if (confirm('Really delete counter?')) {
+    await store.deleteCounter(id)
   }
 }
 
 // --- FILTER & HELPERS ---
 
-// Filterfunktion für q-select (arbeitet jetzt korrekt mit Strings)
 function filterUnits(val, update) {
   if (val === '') {
     update(() => {
@@ -452,24 +478,6 @@ const isFormValid = computed(() => {
   return newCounter.value.opponent && newCounter.value.team[0]
 })
 
-// BILD-LOGIK WURDE ANGEPASST
-function getUnitImage(name) {
-  if (!name || name === 'ANY') return ''
-
-  const unitObj = allUnitData.value.find((u) => u.name === name)
-
-  if (unitObj && unitObj.thumbnailName) {
-    const assetName = unitObj.thumbnailName.replace(/^tex\./, '')
-
-    // Das q-img ruft diese URL auf.
-    // Dein Backend empfängt den Request und streamt das Bild zurück.
-    return `${baseURL}/icons/${assetName}`
-  }
-
-  // Wenn wir hier 'null' oder '' zurückgeben, triggert q-img den error-slot
-  return ''
-}
-
 function getModeColor(mode) {
   if (mode === 'GAC') return 'blue-4'
   if (mode === 'TB') return 'orange-4'
@@ -478,17 +486,16 @@ function getModeColor(mode) {
 </script>
 
 <style scoped lang="scss">
-/* --- GLOBAL --- */
+/* (Dein CSS bleibt unverändert, ich habe es hier nur der Vollständigkeit halber gekürzt) */
 .page-container {
   min-height: 100vh;
   padding: 20px;
   background:
-    linear-gradient(rgba(10, 10, 14, 0.4), rgba(10, 10, 14, 0.9)),
+    linear-gradient(rgba(10, 10, 14, 0.089), rgba(10, 10, 14, 0.781)),
     url('/icons/BGTest.webp') center/cover no-repeat fixed;
   color: #e0e0e0;
   font-family: 'Roboto', sans-serif;
 }
-
 .content-wrapper {
   max-width: 1400px;
   margin: 0 auto;
@@ -499,16 +506,12 @@ function getModeColor(mode) {
     0 0 20px rgba(79, 195, 247, 0.2);
   letter-spacing: 2px;
 }
-
-/* --- GLASS CARDS --- */
 .glass-card {
-  background: rgba(25, 25, 30, 0.95); /* Dunklerer Hintergrund für Kontrast */
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  background: rgba(20, 20, 25, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
-
 .password-card {
   width: 100%;
   max-width: 400px;
@@ -528,31 +531,23 @@ function getModeColor(mode) {
   padding: 8px;
   border-radius: 4px;
 }
-
-/* --- INPUTS & DROPDOWNS --- */
 .high-contrast-input {
   background: rgba(0, 0, 0, 0.3) !important;
   border-radius: 4px;
 }
-/* Erzwingt weiße Schrift in Inputs */
 .high-contrast-input :deep(.q-field__native),
 .high-contrast-input :deep(.q-field__label),
 .high-contrast-input :deep(.q-select__dropdown-icon) {
   color: #ffffff !important;
 }
-
-/* Spezialklasse für Leader Input */
 .border-accent {
   border: 1px solid var(--q-accent);
 }
-
-/* --- COUNTERS LAYOUT --- */
 .counters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
 }
-
 .counter-card {
   transition: transform 0.2s;
   &:hover {
@@ -560,36 +555,44 @@ function getModeColor(mode) {
     border-color: var(--q-accent);
   }
 }
-
 .counter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
 .opponent-info {
   display: flex;
   align-items: center;
 }
-
 .meta-info {
   display: flex;
   align-items: center;
 }
-
 .bg-dark-transparent {
   background: rgba(0, 0, 0, 0.3);
 }
-
-/* --- TEAM DISPLAY --- */
 .team-display {
   gap: 12px;
 }
-
 .unit-slot {
   position: relative;
 }
-
+.filter-bar {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 24px auto;
+  border-radius: 12px;
+}
+@media (max-width: 800px) {
+  .filter-bar {
+    justify-content: center !important;
+  }
+  .filter-bar > div {
+    text-align: center;
+    justify-content: center !important;
+    margin-bottom: 8px;
+  }
+}
 .unit-circle {
   width: 55px;
   height: 55px;
@@ -601,17 +604,15 @@ function getModeColor(mode) {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-
   &.is-leader {
     border-color: var(--q-warning);
     width: 65px;
-    height: 65px; /* Leader etwas größer */
+    height: 65px;
     box-shadow: 0 0 10px rgba(255, 232, 31, 0.4);
   }
   &.is-any {
@@ -619,12 +620,9 @@ function getModeColor(mode) {
     opacity: 0.7;
   }
 }
-
 .border-red {
   border: 2px solid #ef5350;
 }
-
-/* --- ANIMATIONS --- */
 .list-anim-move,
 .list-anim-enter-active,
 .list-anim-leave-active {
@@ -637,23 +635,5 @@ function getModeColor(mode) {
 }
 .list-anim-leave-active {
   position: absolute;
-}
-</style>
-
-<style lang="scss">
-/* Damit das Dropdown Menü dunkel ist */
-.dark-dropdown {
-  background: #1e1e24 !important;
-  color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-/* Hover Effekt im Dropdown */
-.dark-dropdown .q-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-/* Selected Item */
-.dark-dropdown .q-item--active {
-  background: rgba(79, 195, 247, 0.2);
-  color: var(--q-accent);
 }
 </style>

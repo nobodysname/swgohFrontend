@@ -1,23 +1,43 @@
 <template>
   <q-page class="page-container">
     <div class="content-wrapper">
-      <div class="analysis-header">
-        <q-tabs v-model="tab" dense class="analysis-tabs" align="center">
-          <q-tab name="strategy" label="Strategy Overview" />
-          <q-tab name="platoon" label="Platoon Analysis" />
+      <div class="header-section text-center q-mb-lg">
+        <h1 class="text-h4 text-uppercase text-weight-bold glow-text q-my-none">
+          <q-icon name="analytics" color="accent" class="q-mr-sm" />
+          Territory Battles
+        </h1>
+        <div class="text-caption text-grey-4">Strategy & Platoon Assignment</div>
+      </div>
+
+      <div class="glass-card filter-bar q-mb-lg">
+        <q-tabs
+          v-model="tab"
+          dense
+          class="text-grey-5"
+          active-color="accent"
+          indicator-color="accent"
+          align="justify"
+          narrow-indicator
+        >
+          <q-tab name="strategy" icon="psychology" label="Strategy Overview" />
+          <q-tab name="platoon" icon="grid_view" label="Platoon Analysis" />
         </q-tabs>
       </div>
 
-      <q-tab-panels v-model="tab" animated>
-        <q-tab-panel name="strategy">
+      <q-tab-panels v-model="tab" animated class="bg-transparent q-pa-none">
+        <q-tab-panel name="strategy" class="q-pa-none">
           <StrategyPage :analysis="analysis" />
         </q-tab-panel>
 
-        <q-tab-panel name="platoon">
-          <div v-if="loading" class="comparison-section placeholder">Lade TB Analyse…</div>
+        <q-tab-panel name="platoon" class="q-pa-none">
+          <div v-if="loading" class="glass-card q-pa-xl text-center text-grey-4">
+            <q-spinner-orbit color="accent" size="3em" />
+            <div class="q-mt-md">Loading Analysis Data...</div>
+          </div>
 
-          <div v-else-if="error" class="comparison-section placeholder">
-            Fehler beim Laden: {{ error }}
+          <div v-else-if="error" class="glass-card q-pa-xl text-center text-red-4">
+            <q-icon name="warning" size="3em" class="q-mb-md" />
+            <div>Fehler beim Laden: {{ error }}</div>
           </div>
 
           <PlatoonAnalysis v-else :analysis="analysis" />
@@ -29,33 +49,32 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { useTBStore } from 'src/stores/TbStore'
+
+// Components
 import PlatoonAnalysis from '../components/PlatoonAnalysis.vue'
 import StrategyPage from 'src/components/StrategyPage.vue'
-import { useTBStore } from 'src/stores/TbStore'
-import { useQuasar } from 'quasar'
+
+const $q = useQuasar()
+const tbStore = useTBStore()
 
 const tab = ref('strategy')
-const $q = useQuasar()
 const analysis = ref(null)
 const loading = ref(true)
 const error = ref(null)
-const tbStore = useTBStore()
-
-// In deiner Page Komponente (wo die Tabs sind)
 
 onMounted(async () => {
   try {
     $q.loading.show({ message: 'Lade TB Strategie...' })
-
     await tbStore.loadLatestData()
     const res = tbStore.getTBData
     analysis.value = res
   } catch (e) {
-    // Fehler ist okay (z.B. 404 wenn noch keine Daten da sind)
     console.log('Keine Daten vorhanden oder Fehler:', e.message)
-    analysis.value = null // Wichtig: auf null setzen, damit der Placeholder kommt
+    error.value = e.message // Fehler speichern für Anzeige
+    analysis.value = null
   } finally {
-    // WICHTIG: Das muss hier stehen!
     loading.value = false
     $q.loading.hide()
   }
@@ -63,86 +82,49 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
+/* --- GLOBAL --- */
 .page-container {
-  padding: 16px;
-  background: url('/icons/BGTest.webp') center/cover no-repeat fixed;
   min-height: 100vh;
-  color: white;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box;
+  padding: 20px;
+  background:
+    linear-gradient(rgba(10, 10, 14, 0), rgba(10, 10, 14, 0.637)),
+    url('/icons/BGTest.webp') center/cover no-repeat fixed;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
 }
 
 .content-wrapper {
-  max-width: 1500px;
-  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0;
-  background: transparent !important;
-  box-sizing: border-box;
 }
 
-.title {
-  font-family: 'Star Jedi', sans-serif;
-  text-align: center;
-  font-size: 2.6rem;
-  margin-bottom: 20px;
-  color: #ffe81f;
-  text-shadow: 0 0 12px #ffe81f;
+.glow-text {
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.3),
+    0 0 20px rgba(79, 195, 247, 0.2);
+  letter-spacing: 2px;
 }
 
-.analysis-header {
-  display: flex;
-  justify-content: center;
-  margin-top: 30px;
-  margin-bottom: 20px;
-}
-
-.analysis-tabs {
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
-  padding: 6px 20px;
-  max-width: 100%;
-  margin-top: 15px;
+/* --- GLASS LOOK --- */
+.glass-card {
+  background: rgba(20, 20, 25, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   border-radius: 12px;
-  border: 1px solid rgba(255, 232, 31, 0.25);
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
-.analysis-tabs :deep(.q-tab__label) {
-  font-family: 'Star Jedi', sans-serif;
-  letter-spacing: 1px;
-  font-size: 1rem;
+/* --- NAVIGATION / TABS --- */
+.filter-bar {
+  width: 100%;
+  max-width: 800px; /* Tabs etwas schmaler zentriert sieht meist besser aus */
+  margin: 0 auto 24px auto;
+  border-radius: 50px; /* Runde Pill-Shape für die Tabs */
+  overflow: hidden;
 }
 
-.analysis-tabs :deep(.q-tab--active .q-tab__label) {
-  color: #ffe81f !important;
-  text-shadow: 0 0 8px #ffe81f;
-}
-
-.analysis-tabs :deep(.q-tabs__content) {
-  gap: 20px;
-}
-
-:deep(.q-tab-panel) {
-  background: transparent !important;
-  padding: 0 !important;
-}
-:deep(.q-tab-panels) {
-  background: transparent !important;
-}
-
-.comparison-section {
-  background: rgba(0, 0, 0, 0.45) !important;
-  border: 1px solid rgba(255, 232, 31, 0.18);
-  border-radius: 14px;
-  padding: 20px;
-  backdrop-filter: blur(6px);
-}
-
-.placeholder {
-  text-align: center;
-  opacity: 0.7;
+/* Tab Anpassungen */
+:deep(.q-tab__label) {
+  font-weight: bold;
 }
 </style>
