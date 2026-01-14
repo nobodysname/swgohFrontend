@@ -155,7 +155,7 @@
           <div class="text-grey-4">Adjust settings and click 'Run & Save'.</div>
         </div>
 
-        <div v-else-if="displayedResult" class="timeline-wrapper custom-scroll">
+        <div v-else-if="displayedResult" class="glass-card timeline-wrapper custom-scroll">
           <q-timeline color="accent" dark layout="dense">
             <q-timeline-entry
               v-for="step in displayedResult.path"
