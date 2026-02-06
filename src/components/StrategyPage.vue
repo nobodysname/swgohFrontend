@@ -13,7 +13,6 @@
               <span class="text-grey-4 text-caption text-uppercase">Total Guild GP</span>
               <span class="text-white text-weight-bold">{{ formatGP(totalGuildGP) }}</span>
             </div>
-
             <q-input
               v-model.number="unusedGP"
               type="number"
@@ -26,7 +25,6 @@
             >
               <template v-slot:prepend><q-icon name="person_off" color="orange" /></template>
             </q-input>
-
             <div class="bg-dark-transparent q-pa-sm rounded-borders border-accent">
               <div class="row justify-between items-center">
                 <span class="text-accent text-weight-bold">Deployable GP</span>
@@ -35,9 +33,7 @@
               <div class="text-caption text-grey-6 text-right">used for simulation</div>
             </div>
           </div>
-
           <q-separator dark class="q-my-md" />
-
           <div class="input-section">
             <div class="text-caption text-grey-4 text-uppercase q-mb-sm">Combat Success Rates</div>
             <div class="rates-grid-compact">
@@ -62,7 +58,6 @@
             </div>
           </div>
         </div>
-
         <div class="sidebar-footer q-pa-md border-top-accent bg-dark-transparent">
           <div class="row q-gutter-sm">
             <q-btn
@@ -91,7 +86,6 @@
             <p class="text-grey-4 q-mb-md text-center">
               Enter security code to unlock simulation settings.
             </p>
-
             <q-input
               v-model="password"
               type="password"
@@ -105,7 +99,6 @@
             >
               <template v-slot:prepend><q-icon name="lock" color="accent" /></template>
             </q-input>
-
             <div class="column q-gutter-sm">
               <q-btn
                 label="Login"
@@ -232,11 +225,21 @@
                       <div class="bar-bg">
                         <div
                           class="bar-fill"
-                          :style="{ width: getProgressPercent(plan) + '%' }"
+                          :style="{ width: getProgressPercent(plan, step) + '%' }"
                         ></div>
                       </div>
+
                       <div class="text-right text-caption text-grey-5 q-mt-xs">
-                        {{ formatNumber(getTotalPoints(plan)) }} TP
+                        <span v-if="plan.targetStars > 0">
+                          {{ formatNumber(plan.cost + plan.extraDeployment) }} GP Used
+                        </span>
+                        <span v-else-if="plan.extraDeployment > 0">
+                          {{ formatNumber(plan.extraDeployment) }} GP Preloaded
+                        </span>
+                        <span v-else> 0 GP Used </span>
+                        <q-tooltip content-class="bg-black">
+                          Total TP: {{ formatNumber(getTotalPoints(plan, step)) }}
+                        </q-tooltip>
                       </div>
                     </div>
                   </div>
@@ -263,11 +266,14 @@
                         <div
                           v-for="(platoon, pIdx) in op.platoons"
                           :key="platoon.id"
-                          class="platoon-box clickable"
+                          class="platoon-box clickable relative-position"
                           :class="getPlatoonClass(platoon.status)"
                           @click.stop="openPlatoonDetails(platoon, pIdx, op.planetId, step)"
                         >
                           {{ pIdx + 1 }}
+                          <q-tooltip content-class="bg-black">
+                            <div class="text-caption">Op {{ pIdx + 1 }}: {{ platoon.status }}</div>
+                          </q-tooltip>
                         </div>
                       </div>
                     </div>
@@ -315,9 +321,8 @@
               :color="getStatusColor(selectedPlatoon.status)"
               text-color="black"
               class="text-bold"
+              >{{ selectedPlatoon.status }}</q-chip
             >
-              {{ selectedPlatoon.status }}
-            </q-chip>
             <div class="text-white">
               <span class="text-grey-4">Points:</span>
               <span class="text-accent text-weight-bold q-ml-xs"
@@ -329,12 +334,42 @@
           <div class="row q-col-gutter-sm">
             <div v-for="(unit, idx) in dialogUnitList" :key="idx" class="col-4 col-md-3">
               <div class="unit-card relative-position" :class="getUnitCardClass(unit)">
+                <q-tooltip
+                  content-class="bg-dark border-accent text-white shadow-4"
+                  max-width="280px"
+                  anchor="top middle"
+                  self="bottom middle"
+                  :offset="[0, 10]"
+                >
+                  <div class="text-subtitle2 text-accent text-weight-bold q-mb-xs">
+                    {{ unit.name }}
+                  </div>
+                  <q-separator dark class="q-mb-xs" />
+                  <div class="text-caption text-grey-4 q-mb-xs">Top 5 Candidates:</div>
+
+                  <div v-if="getPlayersForUnit(unit.name).length > 0">
+                    <div
+                      v-for="pData in getPlayersForUnit(unit.name)"
+                      :key="pData.name"
+                      class="row justify-between text-caption q-mb-xs"
+                      style="min-width: 150px"
+                    >
+                      <span class="text-white">{{ pData.name }}</span>
+                      <span class="text-weight-bold" :class="getRelicColor(pData.tier)">{{
+                        pData.tier
+                      }}</span>
+                    </div>
+                  </div>
+                  <div v-else class="text-caption text-grey-6 text-italic">
+                    No suitable players found (7*).
+                  </div>
+                </q-tooltip>
+
                 <div class="row justify-center">
                   <q-avatar size="50px" class="shadow-2">
                     <UnitIcon :unit-name="unit.name" :all-unit-data="allUnitData" />
                   </q-avatar>
                 </div>
-
                 <q-badge
                   floating
                   rounded
@@ -344,7 +379,6 @@
                 >
                   <q-icon :name="unit.missing === 0 ? 'check' : 'close'" size="10px" />
                 </q-badge>
-
                 <div class="unit-name-box">
                   <div
                     class="text-caption text-center text-white ellipsis-2-lines line-height-tight"
@@ -352,18 +386,13 @@
                     {{ unit.name }}
                   </div>
                 </div>
-
                 <div class="text-caption text-center text-weight-bold">
-                  <span :class="unit.missing > 0 ? 'text-red-4' : 'text-green-4'">
-                    {{ unit.filled }}/{{ unit.amount }}
-                  </span>
+                  <span :class="unit.missing > 0 ? 'text-red-4' : 'text-green-4'"
+                    >{{ unit.filled }}/{{ unit.amount }}</span
+                  >
                 </div>
               </div>
             </div>
-          </div>
-
-          <div v-if="dialogUnitList.length === 0" class="text-center text-grey-5 q-pa-md">
-            No unit requirements data available.
           </div>
         </q-card-section>
       </q-card>
@@ -422,7 +451,117 @@ const effectiveGP = computed(() => {
   return eff > 0 ? eff : 0
 })
 
-// --- LOGIC ---
+// --- LOGIC: POINTS & PROGRESS ---
+
+function getTotalPoints(plan, step) {
+  let total = (plan.preloadedTP || 0) + (plan.strikeTP || 0) + plan.cost + plan.extraDeployment
+  if (step && step.opsDetails) {
+    const opInfo = step.opsDetails.find((o) => o.planetId === plan.id || o.planetName === plan.name)
+    if (opInfo) {
+      total += opInfo.totalTP
+    } else {
+      total += plan.opsTP || 0
+    }
+  } else {
+    total += plan.opsTP || 0
+  }
+  return total
+}
+
+function getProgressPercent(plan, step) {
+  const currentTP = getTotalPoints(plan, step)
+  const thresholds = plan.originalThresholds || plan.thresholds || [0, 0, 0]
+
+  // Wenn wir bereits 3 Sterne haben, ist der Balken voll
+  if (plan.targetStars >= 3) return 100
+
+  let lowerBound = 0
+  let upperBound = thresholds[0] || 1 // Fallback um Division durch 0 zu vermeiden
+
+  // Bereich bestimmen basierend auf aktuellen Sternen
+  if (plan.targetStars === 0) {
+    // 0 -> 1 Stern
+    lowerBound = 0
+    upperBound = thresholds[0]
+  } else if (plan.targetStars === 1) {
+    // 1 -> 2 Sterne
+    lowerBound = thresholds[0]
+    upperBound = thresholds[1]
+  } else if (plan.targetStars === 2) {
+    // 2 -> 3 Sterne
+    lowerBound = thresholds[1]
+    upperBound = thresholds[2]
+  }
+
+  // Berechnung: (Aktuelle Punkte - Untergrenze) / (Obergrenze - Untergrenze)
+  const range = upperBound - lowerBound
+  const progressInRange = Math.max(0, currentTP - lowerBound)
+
+  // Prozentwert berechnen (max 100%)
+  return Math.min(100, (progressInRange / range) * 100)
+}
+
+// --- LOGIC: PLAYER FINDER (Top 5 + Relic) ---
+
+function getPlayersForUnit(unitName) {
+  const allUnits = playerStore.getUnitData
+  if (!allUnits || allUnits.length === 0) return []
+
+  const unitEntry = allUnits.find((u) => u.name === unitName)
+  if (!unitEntry || !unitEntry.members) return []
+
+  // Map to simple structure, calculate Relic/Gear string
+  const candidates = unitEntry.members
+    .filter((m) => m.currentRarity >= 7)
+    .map((m) => {
+      let tierStr = ''
+      let sortVal = 0 // higher is better
+
+      // Ships
+      if (m.unitPrefab && m.unitPrefab.includes('ship')) {
+        tierStr = '7⭐' // Ships in TB usually just need 7 stars
+        sortVal = m.gp || 0 // Fallback to GP for sorting ships
+      }
+      // Characters
+      else if (m.currentTier < 13) {
+        tierStr = `G${m.currentTier}`
+        sortVal = m.currentTier
+      } else {
+        // Relic logic: relic.currentTier 3 = R1, 4 = R2 ... so (val - 2)
+        // Fallback to 0 if relic data missing but G13
+        const rLevel = m.relic && m.relic.currentTier > 2 ? m.relic.currentTier - 2 : 0
+        tierStr = `R${rLevel}`
+        sortVal = 13 + rLevel
+      }
+
+      return {
+        name: m.memberName,
+        tier: tierStr,
+        val: sortVal,
+      }
+    })
+
+  // Sort: Highest Gear/Relic first, then Name
+  candidates.sort((a, b) => {
+    if (b.val !== a.val) return b.val - a.val
+    return a.name.localeCompare(b.name)
+  })
+
+  // Return Top 5
+  return candidates.slice(0, 5)
+}
+
+function getRelicColor(tierStr) {
+  if (tierStr.startsWith('R')) {
+    const level = parseInt(tierStr.substring(1))
+    if (level >= 7) return 'text-red-5'
+    if (level >= 5) return 'text-orange-4'
+    return 'text-green-4'
+  }
+  return 'text-blue-3' // Gear 12 etc
+}
+
+// --- STANDARD LOGIC ---
 
 function openPlatoonDetails(platoonData, index, planetId, stepData) {
   const planetDef = stepData.activePlanets?.find((p) => p.id === planetId)
@@ -447,6 +586,8 @@ function openPlatoonDetails(platoonData, index, planetId, stepData) {
   }
   showPlatoonDialog.value = true
 }
+
+// ... (Restlicher Code unverändert: dialogUnitList, getPlatoonClass, syncParams, mounted, watch, login/logout, triggerSimulation, formatter) ...
 
 const dialogUnitList = computed(() => {
   if (!selectedPlatoon.value) return []
@@ -516,6 +657,10 @@ onMounted(async () => {
   }
   if (guildStore.getGuildData?.guild?.profile?.guildGalacticPower) {
     totalGuildGP.value = guildStore.getGuildData.guild.profile.guildGalacticPower
+  }
+
+  if (!playerStore.getUnitData || playerStore.getUnitData.length === 0) {
+    await playerStore.loadAllUnits()
   }
 
   if (playerStore.names.length === 0) {
@@ -607,22 +752,6 @@ function formatNumber(num) {
 function formatGP(num) {
   return (num / 1000000).toFixed(1) + 'M'
 }
-function getProgressPercent(plan) {
-  const currentTP = getTotalPoints(plan)
-  if (plan.targetStars === 3) return 100
-  const nextThreshold = plan.thresholds[plan.targetStars]
-  if (!nextThreshold) return 100
-  return Math.min(100, (currentTP / plan.thresholds[2]) * 100)
-}
-function getTotalPoints(plan) {
-  return (
-    (plan.opsTP || 0) +
-    (plan.strikeTP || 0) +
-    (plan.preloadedTP || 0) +
-    plan.cost +
-    plan.extraDeployment
-  )
-}
 function getStatusColor(status) {
   if (status === 'FILLED') return 'green-accent-3'
   if (status === 'PARTIAL') return 'orange'
@@ -631,14 +760,14 @@ function getStatusColor(status) {
 </script>
 
 <style scoped lang="scss">
-/* --- GLOBAL --- */
+/* ... Styles bleiben unverändert ... */
 .strategy-page-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  max-height: 70vh; /* Begrenzte Höhe für eingebettete Ansicht */
+  max-height: 70vh;
   display: flex;
-  overflow-y: hidden; /* Wichtig: Scrollen nur innen */
+  overflow-y: hidden;
 }
 
 .font-jedi {
@@ -698,7 +827,7 @@ function getStatusColor(status) {
 }
 .login-card {
   width: 100%;
-  max-width: 350px; /* Responsive Width */
+  max-width: 350px;
   padding: 30px;
   border: 1px solid var(--q-accent);
 }
@@ -709,7 +838,7 @@ function getStatusColor(status) {
   width: 100%;
   height: 100%;
   padding: 10px;
-  gap: 10px; /* Ersetzt q-mr-md für responsive gap */
+  gap: 10px;
 }
 
 .config-sidebar {
@@ -718,14 +847,13 @@ function getStatusColor(status) {
   display: flex;
 }
 
-/* Content Area */
 .vis-content {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
   position: relative;
-  flex: 1; /* Nimm restlichen Platz */
+  flex: 1;
 }
 
 .header-bar {
@@ -733,40 +861,14 @@ function getStatusColor(status) {
   min-height: 60px;
 }
 
-/* TIMELINE AREA - Scrollbar Fix */
 .timeline-wrapper {
   flex: 1;
   max-height: 65vh;
-  overflow-y: auto; /* Scrollbar hier */
+  overflow-y: auto;
   padding: 20px 40px;
-  min-height: 0; /* Flexbox Hack */
-  background-color: rgba(0, 0, 0, 0.4); /* Leichter Background für Kontrast */
+  min-height: 0;
+  background-color: rgba(0, 0, 0, 0.4);
   border-radius: 12px;
-}
-
-/* --- RESPONSIVE BREAKPOINTS --- */
-@media (max-width: 850px) {
-  .strategy-console {
-    flex-direction: column; /* Stapeln auf Mobile */
-  }
-
-  .config-sidebar {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    max-height: 40vh; /* Sidebar nicht zu groß machen */
-    margin-right: 0;
-  }
-
-  .vis-content {
-    width: 100%;
-    height: auto;
-    flex: 1;
-  }
-
-  .timeline-wrapper {
-    padding: 10px; /* Weniger Padding auf Mobile */
-  }
 }
 
 /* --- CARDS & ELEMENTS --- */
@@ -923,5 +1025,27 @@ function getStatusColor(status) {
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--q-accent);
+}
+
+/* Responsive adjustments */
+@media (max-width: 850px) {
+  .strategy-console {
+    flex-direction: column;
+  }
+  .config-sidebar {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: 40vh;
+    margin-right: 0;
+  }
+  .vis-content {
+    width: 100%;
+    height: auto;
+    flex: 1;
+  }
+  .timeline-wrapper {
+    padding: 10px;
+  }
 }
 </style>
