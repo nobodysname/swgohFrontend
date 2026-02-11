@@ -16,13 +16,7 @@
           >
             {{ isAdmin ? 'Admin' : 'Viewer' }}
           </q-chip>
-          <q-btn
-            flat
-            icon="key"
-            label="Key ändern"
-            class="ghost-btn"
-            @click="openPasswordDialog"
-          />
+          <q-btn flat icon="key" label="Key ändern" class="ghost-btn" @click="openPasswordDialog" />
           <q-btn
             unelevated
             color="accent"
@@ -123,15 +117,25 @@
               clearable
               class="high-contrast-input"
             />
+            <q-select
+              v-model="selectedRoutes"
+              :options="routeOptions"
+              label="Graph Routen"
+              dense
+              filled
+              dark
+              multiple
+              use-chips
+              clearable
+              emit-value
+              map-options
+              option-label="label"
+              option-value="value"
+              class="high-contrast-input"
+            />
           </div>
           <div class="filters-actions">
-            <q-btn
-              outline
-              color="grey-4"
-              label="Reset"
-              class="ghost-btn"
-              @click="resetFilters"
-            />
+            <q-btn outline color="grey-4" label="Reset" class="ghost-btn" @click="resetFilters" />
             <q-btn
               unelevated
               color="accent"
@@ -205,6 +209,42 @@
 
           <q-card class="glass-card chart-card">
             <div class="card-header">
+              <q-icon name="timeline" color="primary" />
+              <span>Routes over time</span>
+            </div>
+            <div class="chart-body">
+              <svg
+                v-if="routeTimeline.series.length && routeTimeline.buckets.length"
+                viewBox="0 0 1000 220"
+                class="line-chart"
+              >
+                <polyline
+                  v-for="series in routeTimeline.series"
+                  :key="series.label"
+                  :points="series.points"
+                  fill="none"
+                  :stroke="series.color"
+                  stroke-width="5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <div v-else class="empty-state">Keine Routen-Zeitreihe verfügbar.</div>
+              <div class="bucket-labels" v-if="routeTimeline.buckets.length">
+                <span>{{ formatBucket(routeTimeline.buckets[0]) }}</span>
+                <span>{{ formatBucket(routeTimeline.buckets[routeTimeline.buckets.length - 1]) }}</span>
+              </div>
+              <div v-if="routeTimeline.series.length" class="route-legend">
+                <div v-for="series in routeTimeline.series" :key="series.label" class="legend-item">
+                  <span class="legend-dot" :style="{ background: series.color }"></span>
+                  <span class="legend-label">{{ series.label }}</span>
+                </div>
+              </div>
+            </div>
+          </q-card>
+
+          <q-card class="glass-card chart-card">
+            <div class="card-header">
               <q-icon name="route" color="secondary" />
               <span>Top Routes</span>
             </div>
@@ -272,7 +312,13 @@
       <div v-else class="locked-state">
         <q-icon name="lock" size="lg" color="grey-7" />
         <div>Bitte Monitoring Key eingeben, um Daten zu sehen.</div>
-        <q-btn outline label="Key eingeben" color="accent" class="q-mt-md" @click="openPasswordDialog" />
+        <q-btn
+          outline
+          label="Key eingeben"
+          color="accent"
+          class="q-mt-md"
+          @click="openPasswordDialog"
+        />
       </div>
     </div>
   </q-page>
@@ -293,6 +339,7 @@ const loading = ref(false)
 const role = ref('viewer')
 const rawRows = ref([])
 const hasAccess = ref(false)
+const selectedRoutes = ref([])
 
 const filters = reactive({
   bucket: 'hour',
@@ -306,6 +353,7 @@ const appliedFilters = ref({ ...filters })
 
 const bucketOptions = ['minute', 'hour', 'day']
 const methodOptions = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+const routeColors = ['#38bdf8', '#f97316', '#a78bfa', '#f472b6', '#22c55e']
 
 const isAuthenticated = computed(() => hasAccess.value)
 const isAdmin = computed(() => role.value === 'admin')
@@ -395,6 +443,21 @@ const topRoutes = computed(() => {
   }))
 })
 
+const routeOptions = computed(() => {
+  const map = new Map()
+  filteredRows.value.forEach((row) => {
+    if (!row.route) return
+    map.set(row.route, (map.get(row.route) || 0) + row.count)
+  })
+  return Array.from(map.entries())
+    .map(([label, count]) => ({
+      label: `${label} (${count.toLocaleString('de-DE')})`,
+      value: label,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count)
+})
+
 const topMethods = computed(() => {
   const map = new Map()
   filteredRows.value.forEach((row) => {
@@ -404,6 +467,41 @@ const topMethods = computed(() => {
   return Array.from(map.entries())
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count)
+})
+
+const routeTimeline = computed(() => {
+  const bucketMap = new Map()
+  const countMap = new Map()
+
+  filteredRows.value.forEach((row) => {
+    if (!row.bucket || !row.route) return
+    bucketMap.set(row.bucket, toSortableKey(row.bucket))
+    const key = `${row.route}||${row.bucket}`
+    countMap.set(key, (countMap.get(key) || 0) + row.count)
+  })
+
+  const buckets = Array.from(bucketMap.entries())
+    .map(([bucket, sortKey]) => ({ bucket, sortKey }))
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((entry) => entry.bucket)
+
+  const routeLabels =
+    selectedRoutes.value.length > 0
+      ? selectedRoutes.value
+      : topRoutes.value.map((route) => route.label).slice(0, 4)
+  const rawSeries = routeLabels.map((label) => ({
+    label,
+    counts: buckets.map((bucket) => countMap.get(`${label}||${bucket}`) || 0),
+  }))
+
+  const max = Math.max(1, ...rawSeries.flatMap((series) => series.counts))
+  const series = rawSeries.map((entry, idx) => ({
+    label: entry.label,
+    color: routeColors[idx % routeColors.length],
+    points: buildLinePointsFromCounts(entry.counts, max),
+  }))
+
+  return { buckets, series }
 })
 
 const linePoints = computed(() => buildLinePoints(bucketSeries.value))
@@ -466,6 +564,16 @@ function buildLinePoints(series) {
   return points.join(' ')
 }
 
+function buildLinePointsFromCounts(counts, max) {
+  if (!counts.length) return ''
+  const points = counts.map((count, idx) => {
+    const x = counts.length === 1 ? 500 : (idx / (counts.length - 1)) * 1000
+    const y = 200 - (count / max) * 160 - 20
+    return `${x},${Math.max(20, y)}`
+  })
+  return points.join(' ')
+}
+
 function buildAreaPath(series) {
   if (!series.length) return ''
   const points = buildLinePoints(series)
@@ -512,6 +620,7 @@ async function fetchMonitoring() {
     rawRows.value = payload?.rows || payload?.data || payload?.items || payload || []
     hasAccess.value = true
   } catch (err) {
+    err
     error.value = 'Zugriff verweigert oder Monitoring nicht erreichbar.'
     rawRows.value = []
     hasAccess.value = false
@@ -537,6 +646,7 @@ function resetFilters() {
   filters.to = ''
   filters.route = ''
   filters.method = null
+  selectedRoutes.value = []
   applyFilters()
 }
 
@@ -737,6 +847,36 @@ function closePasswordDialog() {
   font-size: 0.75rem;
   color: rgba(226, 232, 240, 0.6);
   margin-top: 6px;
+}
+
+.route-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: rgba(226, 232, 240, 0.75);
+  max-width: 220px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  box-shadow: 0 0 10px rgba(94, 234, 212, 0.4);
+}
+
+.legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bar-list {

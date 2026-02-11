@@ -115,6 +115,39 @@
                     <span class="text-red-4">{{ getOppRelicCount(unit, 9) }}</span>
                   </div>
                 </div>
+
+                <div
+                  v-if="
+                    !isShipUnit(unit) &&
+                    !isBothZero(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10))
+                  "
+                  class="metric-row"
+                >
+                  <div class="text-caption text-grey-4">Relic 10 Count</div>
+                  <div class="bar-container small">
+                    <div
+                      class="bar blue"
+                      :style="{
+                        width:
+                          getRelicPercent(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10)) +
+                          '%',
+                      }"
+                    ></div>
+                    <div
+                      class="bar red"
+                      :style="{
+                        width:
+                          100 -
+                          getRelicPercent(getMineRelicCount(unit, 10), getOppRelicCount(unit, 10)) +
+                          '%',
+                      }"
+                    ></div>
+                  </div>
+                  <div class="row justify-between text-weight-bold">
+                    <span class="text-blue-4">{{ getMineRelicCount(unit, 10) }}</span>
+                    <span class="text-red-4">{{ getOppRelicCount(unit, 10) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
