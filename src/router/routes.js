@@ -12,6 +12,8 @@ const routes = [
         component: () => import('pages/OpponentAnalysisPage.vue'),
       },
       { path: '/war', component: () => import('src/pages/WarPage.vue') },
+      { path: '/strategy', component: () => import('src/pages/StrategyPage.vue') },
+      { path: '/monitoring', component: () => import('src/pages/MonitoringPage.vue') },
       { path: '/counter', component: () => import('src/pages/CounterPage.vue') },
     ],
   },
